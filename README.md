@@ -1,2 +1,2 @@
 # rMSIteachings
- Package that contain scripts for the analysis and post-processing of rMSIproc output data
+ Package that contains scripts for the analysis and post-processing of rMSIproc output data
