@@ -1,0 +1,47 @@
+---
+title: "rMSIproc analysis"
+author: "Jordi Rofes"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+## Initial Parameters
+
+```{r}
+
+wdir <- "C:/Users/jordi/Desktop/Metabolomica/Projecte MALDI/CollCap/" 
+peakData <- "mergeddata-peaks.zip"
+
+```
+
+## Extracting the Peak Matrix
+
+```{r results= "hide"}
+
+peakMatrix <- rMSIproc::LoadPeakMatrix(file.path(wdir, peakData))
+
+
+```
+
+## PCA
+
+```{r }
+
+dataNormTic <- peakMatrix$intensity/peakMatrix$normalizations$TIC ### Dividim les intensitats pel factor de normalització TIC 
+pca <- prcomp(dataNormTic, center = T, scale. = T) ### Fem la PCA de la matriu de pics
+
+for (i in which(pca$sdev > 2)){
+  
+  rMSIproc::plotValuesImage(peakMatrix, pca$x[,i])
+
+}
+
+```
+
+## Kmeans
+
+```{r}
+
+
+
+```
