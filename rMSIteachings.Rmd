@@ -3,9 +3,11 @@ title: "rMSIproc analysis"
 author: "Jordi Rofes"
 date: "`r Sys.Date()`"
 output: html_document
+
+  
 ---
 
-## Initial Parameters
+### Initial Parameters
 
 ```{r}
 
@@ -14,7 +16,7 @@ peakData <- "mergeddata-peaks.zip"
 
 ```
 
-## Extracting the Peak Matrix
+### Extracting the Peak Matrix
 
 ```{r results= "hide"}
 
@@ -23,7 +25,7 @@ peakMatrix <- rMSIproc::LoadPeakMatrix(file.path(wdir, peakData))
 
 ```
 
-## PCA
+### PCA
 
 ```{r }
 
@@ -38,10 +40,24 @@ for (i in which(pca$sdev > 2)){
 
 ```
 
-## Kmeans
+### Kmeans
 
-```{r}
+```{r warning=FALSE, results=}
 
+dataNormTic <- peakMatrix$intensity/peakMatrix$normalizations$TIC ### Dividim les intensitats pel factor de normalització TIC 
 
+clData <- vector(mode = "list",length =length(peakMatrix$numPixels)) 
+
+for (i in 1:length(peakMatrix$numPixels)){
+ if (i == 1)
+ {
+    clData[i] <- kmeans(dataNormTic[1:peakMatrix$numPixels[i], ], 2)
+ }
+  
+ if (i != 1)
+ {
+    clData[i] <- kmeans(dataNormTic[peakMatrix$numPixels[i-1]+1:peakMatrix$numPixels[i], ], 2)
+ }
+}
 
 ```
