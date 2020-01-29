@@ -42,22 +42,21 @@ for (i in which(pca$sdev > 2)){
 
 ### Kmeans
 
-```{r warning=FALSE, results=}
+```{r warning = FALSE}
 
 dataNormTic <- peakMatrix$intensity/peakMatrix$normalizations$TIC ### Dividim les intensitats pel factor de normalització TIC 
 
-clData <- vector(mode = "list",length =length(peakMatrix$numPixels)) 
+clData <- vector(mode = "list",length = length(peakMatrix$numPixels)) 
 
-for (i in 1:length(peakMatrix$numPixels)){
- if (i == 1)
- {
-    clData[i] <- kmeans(dataNormTic[1:peakMatrix$numPixels[i], ], 2)
- }
-  
- if (i != 1)
- {
-    clData[i] <- kmeans(dataNormTic[peakMatrix$numPixels[i-1]+1:peakMatrix$numPixels[i], ], 2)
+for (i in 1:length(peakMatrix$numPixels)){ 
+ if (i == 1){
+    clData[i] <- list(kmeans(dataNormTic[1:peakMatrix$numPixels[i], ], 2))
+ } else {
+    clData[i] <- list(kmeans(dataNormTic[(sum(peakMatrix$numPixels[1:(i-1)])+1):sum(peakMatrix$numPixels[1:i]), ], 2))
  }
 }
 
+
 ```
+
+
