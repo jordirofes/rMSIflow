@@ -5,15 +5,19 @@ date: "`r Sys.Date()`"
 output: html_document
 ---
 
+### Introduction
+
+
+
 ### Preparations
 
 ```{r}
 
 # Insert where your data is located (The peak matrix and the .tar images)
-wDir <- "C:/Users/jordi/Desktop/Metabolomica/Projecte MALDI/CollCap" 
+wDir <- "C:/Users/jordi/Desktop/Metabolomica/Projecte MALDI/CollCap/" 
 
 # Insert the name of the peak matrix .zip
-peakData <- "/mergeddata-peaks.zip"
+peakData <- "mergeddata-peaks.zip"
 
 # Insert the group for each image (control, control, problem, ...) in order
 groupsImg <- c("Control", "Control", "Transition", "Transition", "Tumor", "Tumor") 
@@ -22,57 +26,99 @@ groupsImg <- c("Control", "Control", "Transition", "Transition", "Tumor", "Tumor
 
 ### Extracting the Peak Matrix
 
-```{r results= "hide"}
+```{r results = "hide", echo = "false", include=matrixSeparation}
 
 # Here we extract the Peak Matrix from the .zip and create and object with all the data assigned to peakM
 peakM <- rMSIproc::LoadPeakMatrix(file.path(wDir, peakData))
 
+# If your peak matrix is composed of multiple images this will separate them in multiple peak matrix
+if(length(peakM$numPixels) != 1){
+  matrixList <- matrixSeparation(peakM)
+}
+
 ```
 
-#### Exploring the peak matrix
+### Exploring the peak matrix
 
-```{r, }
+```{r warnings= "hide"}
 
 #Select m/z to plot and image number out of peakM$names to plot
 peakM$names
-mz2plot <- 790   #Hint# You can find the maximum mz in your data by using length(peakM$mass)
-img2plot <- 2    #Hint# Writing 0 Allows you to plot all the images at the same time
+mz2plot <- 600       #Tip# You can find all the mz in your data at peakM$mass
+img2plot <- c(4,6,5)   #Tip# Writing a vector c() allows you to plot more images at the same time
+
+plots <- initialPlotter(peakM, matrixList, mz2plot,img2plot, groupsImg)
+
+pl <- lapply(1:length(img2plot), function(i){
+  plotly::ggplotly(p = plots[[i]])
+})
+plotly::subplot(pl)
 
 
-a <- rMSIproc::plotPeakImageG(peakMatrix = peakM, mass = mz2plot)
-b <- plotly::ggplotly(a)
-
-
-## a <- rMSIproc::plotValuesImageG(peakM)
 
 ```
 
 ### Normalizations
 
-```{r}
-## Data normalization is a key step to remove part of the systematical error so the data represents more the biological variation
-## There are several ways to normalize the data:
-    ## TIC (Total Ion Count): 
-    ## aqTIC (aquired TIC)
-    ## RCS ()
+Data normalization is a key step to remove part of the systematical error so the data represents more the biological variation
+  There are several ways to normalize the data:
+     TIC (Total Ion Count): 
+     aqTIC (aquired TIC)
+     RMS ()
 
+Altres normalitzacions que podem probar ---> Mediana // TIC excluint pics molt o poc intensos // Nivell de soroll?¿ -> Que la variancia sigui la mateixa  ->fer diferencies consecutives entre punts dels espectres i després buscar la mediana de -> cada diferencia menys la mediana
+
+```{r}
+mz <- 400
+rMSIproc::plotPeakImage(matrixList[[1]], mz, labels = groupsImg[1])
+rMSIproc::plotPeakImage(matrixList[[1]], mz, labels = groupsImg[1],normalization = "TIC")
+rMSIproc::plotPeakImage(matrixList[[1]], mz, labels = groupsImg[1],normalization = "RMS")
+rMSIproc::plotPeakImage(matrixList[[1]], mz, labels = groupsImg[1],normalization = "AcqTic")
+
+#pl <- plotly::ggplotly(rMSIproc::plotPeakImageG(matrixList[[1]], mz, plot_labels = groupsImg[1]))
+#pl2 <- plotly::ggplotly(rMSIproc::plotPeakImageG(matrixList[[1]], mz, plot_labels = groupsImg[1], normalization = "TIC"))
+#plotly::subplot(pl, pl2)
 
 ```
 
-### Medium Spectra
+### Medium Spectrum
 
 ```{r}
-#We can use rMSI functions to plot the average spectra of an image to explore the raw data
-#First we have to put the path to the .tar that contains the image.
-imageName <- "/CapiColl_Au_S01_1_sub-proc.tar"  #Hint# Even if your data is a .zip/.rar when you write the imageName you have to                                                     #Hint# write it as a .tar.
+# We can use rMSI functions to plot the average spectra of an image to explore the raw data
+# First you will need to put the .tar of the images on the same directory you are working on
+bad <- list.files(wDir, pattern = "^ramdisk")
+imageName <- list.files(wDir, pattern = "proc.tar")
+imageName <- imageName[!(imageName %in% bad)]
 
-#Next, we run the code and a new window will appear allowing us to see the average spectra and interact with it.
+# Then we run the code so it extracts the image information and calculates de average spectrum
+avSpec <- lapply(imageName, function(name){
+  image <- rMSI::LoadMsiData(file.path(wDir, name))
+  mass <- image$mass
+  aS <- rMSIproc::AverageSpectrum(image) 
+  spect <- cbind(mass, aS)
+  return(spect)
+})
 
-image <- rMSI::LoadMsiData(file.path(wDir, imageName))
-avSpec1 <- rMSIproc::AverageSpectrum(image)
-rMSI::plotSpectra(mass = image$mass, intensity = avSpec1)
+avSepcData <- data.frame(avSpec)
+row.names(avSepcData) <- imageName
+colnames(avSepcData) <- image$mass
 
 ```
+
+```{r}
+# Here we plot the average spectrums we want to compare
+
+
+plotly::ggplotly(ggplot2::ggplot(avSepcData) + geom_line(aes(x = mass, y = aS), colour = "red")+
+                   geom_line(aes(x = avSepcData$mass, y = avSepcData$aS.1),colour = "blue")+
+                   geom_line(aes(x = avSepcData$mass, y = avSepcData$aS.2),colour = "yellow")+
+                   geom_line(aes(x = avSepcData$mass, y = avSepcData$aS.3),colour = "green")+
+                   geom_line(aes(x = avSepcData$mass, y = avSepcData$aS.4),colour = "orange")+
+                   geom_line(aes(x = avSepcData$mass, y = avSepcData$aS.5),colour = "black")+ xlab("M/Z") + ylab("Intensity"))
+#rMSI::plotSpectra(mass = image$mass, intensity = avSpec1)
+```
+
+
 
 ### PCA
 
@@ -124,4 +170,5 @@ rMSIproc::plotValuesImage(peakM, allClusImages)
 ```
 
 
+package.skeleton(name = initialPlotter,list = initialPlotter.R, path = C:/Users/jordi/Desktop/Metabolomica/Projecte MALDI/initialPlotter)
 
