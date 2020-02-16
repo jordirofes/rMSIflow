@@ -1,5 +1,5 @@
 
-initialPlotter <- function(pM, matrixL, mz, img, groups, norm = NA){
+initialPlotter <- function(pM, matrixL, mz, img, groups, norm = NA, sv, file){
   a <- vector("list", length(img))
   if (img == 0){
       a <- rMSIproc::plotPeakImageG(pM, mz, plot_labels = groups, normalization = norm)
@@ -12,7 +12,17 @@ initialPlotter <- function(pM, matrixL, mz, img, groups, norm = NA){
   pl <- lapply(1:length(img2plot), function(i){
     plotly::ggplotly(p = a[[i]])
   })
+  if(sv == T){svPlot(file, a)}
   return(pl)
+}
+
+svPlot <- function(flName, plots2save){
+  pdf(flName)
+  for(i in 1:length(plots2save)){
+    print(plots2save[i])
+  }
+  dev.off()
+
 }
 
 
@@ -23,6 +33,7 @@ pcaPlotter <- function(peakMatrix, pc1, pc2, cnt, scl, grpImg , normalization = 
     if(normalization == "TIC"){dataRaw/peakMatrix$normalization$TIC}
     else if(normalization == "RMS"){dataRaw/peakMatrix$normalization$RMS}
     else if(normalization == "ACQTIC"){dataRaw/peakMatrix$normalization$AcqTic}
+    
     else {stop("The normalization name is not one of the list. Check if you've written it correctly or if you don't want the data to be normalized write a NA in normalization")}
   }
      colnames(dataRaw) <- peakMatrix$mass

@@ -100,13 +100,26 @@ if(groupsImg != length(peakM$names)){
 
 # Select m/z to plot and image number out of peakM$names to plot
 peakM$names
-mz2plot <- 100     #Tip. You can find all the mz in your data using peakM$mass
-img2plot <- c(1,3)   #Tip. Writing a vector c() allows you to plot more images at the same time
-
-
-plots <- initialPlotter(peakM, matrixList, mz2plot,img2plot, groupsImg)
+mz2plot <- 100       # Tip # You can find all the mz in your data using peakM$mass
+img2plot <- c(1,3)   # Tip # Writing a vector c() allows you to plot more images at the same time
+normalization <- NA  # Choose between TIC/AcqTic/RMS normalizations // Leave it as NA for no normalization.
+save <- T            # Choose if you want to save the plots into a pdf file
+fileN <- "plotsA.pdf"      # Choose the name of the pdf file. Remember if you use the same name, the last one will be   
+                     # overwritten
+  
+plots <- initialPlotter(peakM, matrixList, mz2plot,img2plot, groupsImg, normalization, save, fileN)
 plotly::subplot(pl)
 
+
+```
+
+### Saving Plots
+
+```{r}
+# This chunk will save the last plots plotted on the Exploring the peak matrix chunk
+fileN <- "plotsA.pdf"  # Name of the file with .pdf extension
+
+ 
 
 ```
 
@@ -115,23 +128,11 @@ plotly::subplot(pl)
 Data normalization is a key step to remove part of the systematical error so the data represents more the biological variation
   There are several ways to normalize the data:
      TIC (Total Ion Count): 
-     acqTIC (Acquired TIC):
+     AcqTic (Acquired TIC):
      RMS (Root Mean Squares):
 
-```{r}
-mz <- 400
-rMSIproc::plotPeakImage(matrixList[[1]], mz, labels = groupsImg[1])
-rMSIproc::plotPeakImage(matrixList[[1]], mz, labels = groupsImg[1],normalization = "TIC")
-rMSIproc::plotPeakImage(matrixList[[1]], mz, labels = groupsImg[1],normalization = "RMS")
-rMSIproc::plotPeakImage(matrixList[[1]], mz, labels = groupsImg[1],normalization = "AcqTic")
 
-#pl <- plotly::ggplotly(rMSIproc::plotPeakImageG(matrixList[[1]], mz, plot_labels = groupsImg[1]))
-#pl2 <- plotly::ggplotly(rMSIproc::plotPeakImageG(matrixList[[1]], mz, plot_labels = groupsImg[1], normalization = "TIC"))
-#plotly::subplot(pl, pl2)
-
-```
-
-### Medium Spectrum
+### Medium Spectrum from raw data
 
 ```{r}
 # We can use rMSI functions to plot the average spectra of an image to explore the raw data
