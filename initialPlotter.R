@@ -1,38 +1,3 @@
-matrixSeparation <- function(pM){
-  
-  pkl <- vector("list", length = length(pM$numPixels))
-  normList <- vector("list", length = length(pM$normalizations))
-  
- for(l in (1:length(pM$numPixels))){
-    pkl[[l]] <- pM
-    
-    limitDown <- sum(pM$numPixels[1:(l-1)])+1
-    limitUp <- sum(pM$numPixels[1:l])
-    if(l == 1){limitDown <- 1}
-    int <- limitDown:limitUp
-    
-    pkl[[l]]$intensity <- pM$intensity[int,]
-    pkl[[l]]$SNR <- pM$SNR[int,]
-    pkl[[l]]$area <- pM$area[int,]
-    pkl[[l]]$pos <- pM$pos[int,]    
-    pkl[[l]]$posMotors <- pM$posMotors[int,]
-
-    pkl[[l]]$numPixels <- pM$numPixels[l]
-    pkl[[l]]$names <- pM$names[l]
-    pkl[[l]]$uuid <- pM$uuid[l]
-    
-     for(z in 1:length(pM$normalizations)){
-       normList[[z]] <- pM$normalizations[[z]][int]
-     }
-    normList2 <- as.data.frame(normList)
-    colnames(normList2) <- colnames(pM$normalizations)
-    pkl[[l]]$normalizations <- normList2
- }
-  
-  return(pkl)
-    
-  }
-
 
 initialPlotter <- function(pM, matrixL, mz, img, groups, norm = NA){
   a <- vector("list", length(img))
@@ -44,8 +9,42 @@ initialPlotter <- function(pM, matrixL, mz, img, groups, norm = NA){
       a[[j]] <- rMSIproc::plotPeakImageG(matrixL[[img[j]]], mz, plot_labels = groups[img[j]], normalization = norm)
     }
   }
-  return(a)
+  pl <- lapply(1:length(img2plot), function(i){
+    plotly::ggplotly(p = a[[i]])
+  })
+  return(pl)
+}
+
+
+pcaPlotter <- function(peakMatrix, pc1, pc2, cnt, scl, grpImg , normalization = NA){
+  dataRaw <- peakMatrix$intensity
+  toupper(normalization)
+  if(!is.na(normalization)){
+    if(normalization == "TIC"){dataRaw/peakMatrix$normalization$TIC}
+    else if(normalization == "RMS"){dataRaw/peakMatrix$normalization$RMS}
+    else if(normalization == "ACQTIC"){dataRaw/peakMatrix$normalization$AcqTic}
+    else {stop("The normalization name is not one of the list. Check if you've written it correctly or if you don't want the data to be normalized write a NA in normalization")}
   }
+     colnames(dataRaw) <- peakMatrix$mass
+  pcaRaw <- prcomp(dataRaw, center = cnt, scale. = scl) ### Fem la PCA de la matriu de pics
+  
+  listGroups <- mapply(function(groups,i){
+    rep(groups,  peakMatrix$numPixels[i])
+  }, grpImg, 1:length(grpImg))
+  
+  vectorGroups <- unlist(listGroups)
+  pcaData <- list()
+  pcaData[[1]] <- pcaRaw$x[,pc1]
+  pcaData[[2]] <- pcaRaw$x[,pc2]
+  pcaData[[3]] <- vectorGroups
+  dataPca <- as.data.frame(pcaData)
+  colnames(dataPca) <- c("PC1", "PC2", "Groups")
+  rownames(dataPca) <- c(1:length(dataPca$PC1))
+  sdev <- round(pcaRaw$sdev/sum(pcaRaw$sdev)*100)
+  
+  ggplot(dataPca)+ geom_point(aes(x = PC1, y = PC2, colour = Groups), alpha = 0.5) +  xlab(paste0("PC1", sdev[pc2plot1])) + ylab(paste0("PC1", sdev[pc2Plot2]))
+  
+}
  
 
 

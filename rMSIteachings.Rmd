@@ -6,8 +6,25 @@ output: html_document
 ---
 
 ### Introduction
+rMSI and rMSIproc are R packages that allow the visualization of MALDIims data (rMSI) and the data processing from all the pixel spectrums to a peak matrix (rMSIproc). This tutorial wants to provide a standardized workflow for scientists analyzing different rMSIproc peak matrixs obtained from different images. This tutorial will explain how to: explore the peak matrix to visualize the different m/z intensities on the images, what normalization steps should be utilized when comparing different peak matrix, how to visualize the medium spectrum of the raw data, the application of multidimensional reduction methods (PCA), the utilization of clustering methods like Kmeans and SOM to find clusters of similar spectrums that can be related to differences between different tissue zones and the visualization and comparison of those clusters.
+
+### Required Packages
+For this tutorial you will need to install [rMSI](https://github.com/prafols/rMSI), [rMSIproc](https://github.com/prafols/rMSIproc), [ggplot2](), [plotly]() packages if you don't have them.
 
 
+### rMSI
+```{r}
+# This function opens the rMSI user interface that allows you to visualize a chosen image
+rMSI::OpenMSI()
+```
+### rMSIproc
+```{r}
+# This function opens the rMSIproc user interface.
+# rMSIproc allows you to input multiple rMSI images to process them (peak peaking, binning, aligning, baseline correction # and calibration) and outputs a compressed file with the peak matrix with the intensities of each mass bin for every    
+# pixel on the image  
+rMSIproc::ProcessWizard()
+
+```
 
 ### Preparations
 
@@ -19,18 +36,16 @@ wDir <- "C:/Users/jordi/Desktop/Metabolomica/Projecte MALDI/CollCap/"
 # Insert the name of the peak matrix .zip
 peakData <- "mergeddata-peaks.zip"
 
-# Insert the group for each image (control, control, problem, ...) in order
-groupsImg <- c("Control1", "Control2", "Transition1", "Transition1", "Tumor1", "Tumor2")
 
 ```
 
+
 ### Extracting the Peak Matrix
 
-```{r results = "hide", echo = "false", include=matrixSeparation}
+```{r results = "hide", echo = "false"}
 
 # Here we extract the Peak Matrix from the .zip and create and object with all the data assigned to peakM
 peakM <- rMSIproc::LoadPeakMatrix(file.path(wDir, peakData))
-
 
 
 # If your peak matrix is composed of multiple images this will separate them in multiple peak matrix
@@ -44,26 +59,53 @@ for(i in 1:length(peakM$numPixels)){
  matrixList[[i]] <- rMSIproc::`[.rMSIprocPeakMatrix`(peakM, int)
 }
 
+peakM$names 
+```
+
+### Order changing
+
+```{r}
+# If you are not happy with the order of the images showed on peakM$names you can change it's order by entering here a    # vector with the desired order of images. This will actualize the peakM object with the new order
+
+newOrder <- c(1,2,5,6,3,4) # Insert here the new desired order and run the code chunk. It will require some time to finish
+ 
+matrixList <- matrixList[newOrder]
+peakM <- rMSIproc::MergePeakMatrices(matrixList)
+```
+
+
+###  Assigning groups
+
+```{r}
+# To allow classification of the images in different groups you will need to insert the names of each group in the vector groupsImg in order as they are on the peak matrix
+
+peakM$names # This allows you to see the order of the images on the peak matrix
+
+# Insert the group for each image (control, control, problem, ...) in the order they are on the peak matrix
+# Note # If left empty each image will be named as especified on peakM$names.
+groupsImg <- c("Control1", "Control2", "Transition1", "Transition2", "Tumor1", "Tumor2")
+
+
+
+if(groupsImg != length(peakM$names)){
+  stop("Be careful. The number of groups is not equal to the number of images. Every image should have a group assigned")
+}
 
 ```
 
+
 ### Exploring the peak matrix
 
-```{r warnings= "hide"}
+```{r echo=FALSE, warning=FALSE}
 
 # Select m/z to plot and image number out of peakM$names to plot
 peakM$names
-mz2plot <- 377       #Tip# You can find all the mz in your data at peakM$mass
-img2plot <- c(6)   #Tip# Writing a vector c() allows you to plot more images at the same time
+mz2plot <- 100     #Tip. You can find all the mz in your data using peakM$mass
+img2plot <- c(1,3)   #Tip. Writing a vector c() allows you to plot more images at the same time
 
 
 plots <- initialPlotter(peakM, matrixList, mz2plot,img2plot, groupsImg)
-
-pl <- lapply(1:length(img2plot), function(i){
-  plotly::ggplotly(p = plots[[i]])
-})
 plotly::subplot(pl)
-
 
 
 ```
@@ -73,8 +115,8 @@ plotly::subplot(pl)
 Data normalization is a key step to remove part of the systematical error so the data represents more the biological variation
   There are several ways to normalize the data:
      TIC (Total Ion Count): 
-     aqTIC (aquired TIC)
-     RMS ()
+     acqTIC (Acquired TIC):
+     RMS (Root Mean Squares):
 
 ```{r}
 mz <- 400
@@ -99,7 +141,7 @@ bad <- list.files(wDir, pattern = "^ramdisk")
 imageName <- list.files(wDir, pattern = "proc.tar")
 imageName <- imageName[!(imageName %in% bad)]
 
-# Then we run the code so it extracts the image information and calculates de average spectrum
+# Then we run the code so it extracts the image information and calculates the average spectrum
 avSpec <- lapply(imageName, function(name){
   image <- rMSI::LoadMsiData(file.path(wDir, name))
   mass <- image$mass
@@ -112,6 +154,7 @@ avSepcData <- data.frame(avSpec)
 # row.names(avSepcData) <- imageName
 # colnames(avSepcData) <- image$mass
 
+ 
 ```
 
 ```{r}
@@ -134,50 +177,13 @@ ggplotly(ggplot2::ggplot(avSepcData) + geom_line(aes(x = mass, y = aS), colour =
 ### PCA de dades sense normalitzar
 
 ```{r }
+pc2plot1 <- 1  # Select which PC are going to be plotted in a two dimensional graphic
+pc2plot2 <- 2  # 
+centering<- T 
+scaling  <- T
+normalization <- NA
 
-dataRaw <- peakM$intensity 
-colnames(dataRaw) <- peakM$mass
-pcaRaw <- prcomp(dataRaw, center = T, scale. = T) ### Fem la PCA de la matriu de pics
-
-listGroups <- mapply(function(groups,i){
-  rep(groups,  peakM$numPixels[i])
-}, groupsImg, 1:length(groupsImg))
-
-vectorGroups <- unlist(listGroups)
-
-pcaData <- list()
-pcaData[[1]] <- pcaRaw$x[,1]
-pcaData[[2]] <- pcaRaw$x[,2]
-pcaData[[3]] <- vectorGroups
-dataPca <- as.data.frame(pcaData)
-colnames(dataPca) <- c("PC1", "PC2", "Groups")
-rownames(dataPca) <- c(1:5333)
-
-ggplot(dataPca)+ geom_point(aes(x = PC1, y = PC2, colour = Groups), alpha = 0.5) + xlab("PC1") + ylab("PC2")
-
-```
-
-### PCA de dades normalitzades per TIC
-
-```{r}
-dataNormTic <- peakM$intensity/peakM$normalizations$TIC ### Dividim les intensitats pel factor de normalització TIC 
-pcaNormTic <- prcomp(dataNormTic, center = T, scale = T)
- 
-pcaData <- list()
-pcaData[[1]] <- pcaNormTic$x[,1]
-pcaData[[2]] <- pcaNormTic$x[,2]
-pcaData[[3]] <- vectorGroups
-dataPca <- as.data.frame(pcaData)
-colnames(dataPca) <- c("PC1", "PC2", "Groups")
-rownames(dataPca) <- c(1:5333)
-
-ggplot(dataPca)+ geom_point(aes(x = PC1, y = PC2, colour = Groups), alpha = 0.5) + xlab("PC1") + ylab("PC2")
-
-
- #rMSIproc::plotValuesImage(peakM, pcaRaw$x[,1])
- #rMSIproc::plotValuesImage(peakM, pcaNormTic$x[,1])
- 
-
+pcaPlotter(peakMatrix = peakM, pc1 =  pc2plot1, pc2 = pc2plot2, centering, scaling, groupsImg, normalization)
 
 ```
 
@@ -191,9 +197,9 @@ clData <- vector(mode = "list",length = length(peakM$numPixels))
 
 for (i in 1:length(peakM$numPixels)){ 
  if (i == 1){
-    clData[i] <- list(kmeans(dataNormTic[1:peakM$numPixels[i], ], 2))
+    clData[i] <- list(kmeans(dataNormTic[1:peakM$numPixels[i], ], 5))
  } else {
-    clData[i] <- list(kmeans(dataNormTic[(sum(peakM$numPixels[1:(i-1)])+1):sum(peakM$numPixels[1:i]), ], 2))
+    clData[i] <- list(kmeans(dataNormTic[(sum(peakM$numPixels[1:(i-1)])+1):sum(peakM$numPixels[1:i]), ], 5))
  }
 }
 
@@ -204,52 +210,12 @@ clusImages <- lapply(clData, function(x){
 allClusImages <- unlist(clusImages)
 
 
-rMSIproc::plotValuesImage(peakM, allClusImages)
+plotly::ggplotly(rMSIproc::plotValuesImageG(peakM, allClusImages))
 
 ```
 
 
-### Finding gold peaks
 
-```{r}
-## This function searches the peak matrix for the intensities of the peaks related
-auTList <- c(196.966570, 393.933140, 590.899710, 787.866280, 984.832850)
-
-rmIndex <- lapply(auTList, function(tMass){
-  diffMatrix <- (abs(peakM$mass - tMass))
-  index <- which.min(diffMatrix)
-  return(index) ## This will return the masses where the gold peaks are based on the real mass                                                 ## with the minimum difference with the teorical mass
-  })
-rmIndex <- unlist(rMass)
-auMass <- peakM$mass[rmIndex]
-
-## All intensities from every Au peak
-aupeakMatrix <- peakM$intensity[,rMass]
-colnames(aupeakMatrix) <- c("Au1", "Au2","Au3", "Au4","Au5")
-
-```
-
-### Calculating Au intensity quocients
-
-```{r}
-# Mean intensities by image
-meanImagePeakAu <- matrix(nrow = length(peakM$numPixels), ncol = length(auMass))
-
-for(i in 1:length(peakM$numPixels)){
-  for(z in 1:length(auTList)){
-    
-     limitDown <- sum(peakM$numPixels[1:(i-1)])+1
-    limitUp <- sum(peakM$numPixels[1:i])
-    if(i == 1){limitDown <- 1}
-    int <- limitDown:limitUp
-  
-    meanImagePeakAu[i,z] <-  mean(aupeakMatrix[int, z])
-  }
-colnames(meanImagePeakAu) <- c("Au1", "Au2","Au3", "Au4","Au5")
-}
-
-
-```
 
 
 
