@@ -168,15 +168,44 @@ ggplotly(ggplot2::ggplot(avSepcData) + geom_line(aes(x = mass, y = aS), colour =
 ### PCA
 
 ```{r echo=FALSE, message=FALSE, warning=FALSE}
-pc2plot1 <- 1  # Select which PC are going to be plotted in a two dimensional graphic
-pc2plot2 <- 2  # 
 centering<- T 
 scaling  <- T
 normalization <- NA
+
+
+pcaD <-pca(peakMatrix = peakM, centering, scaling, groupsImg, normalization)
+
+
+```
+
+### PC vs PC plots
+
+```{r}
+pc2plot1 <- 1  # Select which PC are going to be plotted in a two dimensional graphic
+pc2plot2 <- 2  # 
 save <- T
 fileNpca <- "PC1vsPC2.pdf"
 
-ggplotly(pcaPlotter(peakMatrix = peakM, pc1 =  pc2plot1, pc2 = pc2plot2, centering, scaling, groupsImg, normalization, save, fileNpca))
+pca2dimPlot(peakM, pcaD, groupsImg, pc2plot1,pc2plot2,save, fileNpca)
+
+```
+
+### PC plots on image
+
+```{r}
+pc2plot <-
+img2plotPca <-
+save <- 
+fileNpca2 <- "PC1xaqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq qqqwwwwwwwwwccccccccccccccccccccccccccccccccccccccccccccccccqaz<.pdf"
+  
+```
+
+
+### Medium spectrum from peak matrix
+```{r}
+pixels2calculate <- c(1:50)
+normalization <- ""
+medSpec(peakM, pixels2calculate, normalization)
 
 
 ```

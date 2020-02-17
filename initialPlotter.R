@@ -24,7 +24,7 @@ svPlot <- function(flName, plots2save){
 }
 
 
-pcaPlotter <- function(peakMatrix, pc1, pc2, cnt, scl, grpImg , normalization = NA, sv2, fileN2){
+pca <- function(peakMatrix, cnt, scl, normalization = NA){
   dataRaw <- peakMatrix$intensity
   toupper(normalization)
   if(!is.na(normalization)){
@@ -37,30 +37,50 @@ pcaPlotter <- function(peakMatrix, pc1, pc2, cnt, scl, grpImg , normalization = 
      colnames(dataRaw) <- peakMatrix$mass
   pcaRaw <- prcomp(dataRaw, center = cnt, scale. = scl) ### Fem la PCA de la matriu de pics
   
-  listGroups <- mapply(function(groups,i){
-    rep(groups,  peakMatrix$numPixels[i])
-  }, grpImg, 1:length(grpImg))
-  
-  vectorGroups <- unlist(listGroups)
-  pcaData <- list()
-  pcaData[[1]] <- pcaRaw$x[,pc1]
-  pcaData[[2]] <- pcaRaw$x[,pc2]
-  pcaData[[3]] <- vectorGroups
-  dataPca <- as.data.frame(pcaData)
-  colnames(dataPca) <- c("PC1", "PC2", "Groups")
-  rownames(dataPca) <- c(1:length(dataPca$PC1))
-  sdev <- round(pcaRaw$sdev/sum(pcaRaw$sdev)*100)
-  
-  plotPca <- ggplot(dataPca)+ geom_point(aes(x = PC1, y = PC2, colour = Groups), alpha = 0.5) + 
-             xlab(paste0("PC1 (", sdev[pc2plot1],"%)")) + ylab(paste0("PC1 (", sdev[pc2plot2],"%)")) + 
-             theme_minimal() + geom_abline(slope = 0,intercept = 0) + geom_abline(slope = 1000, intercept = 0) + 
-             geom_point(aes(x= 0, y =0), color= "black")
+ 
   
   if(sv2 == T){
     svPlot(fileN2, plotPca)
   }
   return(plotPca)
 }
- 
+pca2dimPlot <- function(peakMatrix, pca, grpImg, pc1, pc2) {
+  listGroups <- mapply(function(groups,i){
+    rep(groups,  peakMatrix$numPixels[i])
+  }, grpImg, 1:length(grpImg))
+  
+  vectorGroups <- unlist(listGroups)
+  pcaData <- list()
+  pcaData[[1]] <- pca$x[,pc1]
+  pcaData[[2]] <- pca$x[,pc2]
+  pcaData[[3]] <- vectorGroups
+  dataPca <- as.data.frame(pcaData)
+  colnames(dataPca) <- c("PC1", "PC2", "Groups")
+  rownames(dataPca) <- c(1:length(dataPca$PC1))
+  sdev <- round(pcaRaw$sdev/sum(pcaRaw$sdev, 4)*100)
+  
+  plotPca <- ggplot(dataPca,aes(x = PC1, y = PC2, colour = Groups))+ geom_point(alpha = 0.5)+ stat_ellipse() + 
+    xlab(paste0("PC1 (", sdev[pc2plot1],"%)")) + ylab(paste0("PC1 (", sdev[pc2plot2],"%)")) + 
+    theme_minimal() + geom_abline(slope = 0,intercept = 0) + geom_abline(slope = 1000, intercept = 0) + 
+    geom_point(aes(x= 0, y =0), color= "black") 
+}
 
+
+
+medSpec <- function(peakMat, pixels){
+  data <- peakMat$intensity
+  toupper(normalization)
+  if(!is.na(normalization)){
+    if(normalization == "TIC"){data/peakMat$normalization$TIC}
+    else if(normalization == "RMS"){data/peakMat$normalization$RMS}
+    else if(normalization == "ACQTIC"){data/peakMat$normalization$AcqTic}
+    else {stop("The normalization name is not one of the list. Check if you've written it correctly or if you don't want the data to be normalized write a NA in normalization")}
+  }
+  pixelMatrix <- peakMat$intensity[pixels,]
+  avgSpecpm <- apply(pixelMatrix, 2, mean)
+  aveSpec <-plotly::ggplotly(ggplot() + geom_segment(aes(x = peakMatrix$mass, y = 0, xend = peakMat$mass, yend = avgSpecpm))+
+                            xlab("Mass") + ylab("Intensity") + theme_minimal())
+                             
+  return(aveSpec)
+}
 
