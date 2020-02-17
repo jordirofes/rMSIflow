@@ -108,18 +108,8 @@ fileN <- "plotsA.pdf"      # Choose the name of the pdf file. Remember if you us
                      # overwritten
   
 plots <- initialPlotter(peakM, matrixList, mz2plot,img2plot, groupsImg, normalization, save, fileN)
-plotly::subplot(pl)
+plotly::subplot(plots)
 
-
-```
-
-### Saving Plots
-
-```{r}
-# This chunk will save the last plots plotted on the Exploring the peak matrix chunk
-fileN <- "plotsA.pdf"  # Name of the file with .pdf extension
-
- 
 
 ```
 
@@ -175,16 +165,19 @@ ggplotly(ggplot2::ggplot(avSepcData) + geom_line(aes(x = mass, y = aS), colour =
 
 
 
-### PCA de dades sense normalitzar
+### PCA
 
-```{r }
+```{r echo=FALSE, message=FALSE, warning=FALSE}
 pc2plot1 <- 1  # Select which PC are going to be plotted in a two dimensional graphic
 pc2plot2 <- 2  # 
 centering<- T 
 scaling  <- T
 normalization <- NA
+save <- T
+fileNpca <- "PC1vsPC2.pdf"
 
-pcaPlotter(peakMatrix = peakM, pc1 =  pc2plot1, pc2 = pc2plot2, centering, scaling, groupsImg, normalization)
+ggplotly(pcaPlotter(peakMatrix = peakM, pc1 =  pc2plot1, pc2 = pc2plot2, centering, scaling, groupsImg, normalization, save, fileNpca))
+
 
 ```
 

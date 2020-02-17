@@ -18,15 +18,13 @@ initialPlotter <- function(pM, matrixL, mz, img, groups, norm = NA, sv, file){
 
 svPlot <- function(flName, plots2save){
   pdf(flName)
-  for(i in 1:length(plots2save)){
-    print(plots2save[i])
-  }
+  print(plots2save)
   dev.off()
 
 }
 
 
-pcaPlotter <- function(peakMatrix, pc1, pc2, cnt, scl, grpImg , normalization = NA){
+pcaPlotter <- function(peakMatrix, pc1, pc2, cnt, scl, grpImg , normalization = NA, sv2, fileN2){
   dataRaw <- peakMatrix$intensity
   toupper(normalization)
   if(!is.na(normalization)){
@@ -53,8 +51,15 @@ pcaPlotter <- function(peakMatrix, pc1, pc2, cnt, scl, grpImg , normalization = 
   rownames(dataPca) <- c(1:length(dataPca$PC1))
   sdev <- round(pcaRaw$sdev/sum(pcaRaw$sdev)*100)
   
-  ggplot(dataPca)+ geom_point(aes(x = PC1, y = PC2, colour = Groups), alpha = 0.5) +  xlab(paste0("PC1", sdev[pc2plot1])) + ylab(paste0("PC1", sdev[pc2Plot2]))
+  plotPca <- ggplot(dataPca)+ geom_point(aes(x = PC1, y = PC2, colour = Groups), alpha = 0.5) + 
+             xlab(paste0("PC1 (", sdev[pc2plot1],"%)")) + ylab(paste0("PC1 (", sdev[pc2plot2],"%)")) + 
+             theme_minimal() + geom_abline(slope = 0,intercept = 0) + geom_abline(slope = 1000, intercept = 0) + 
+             geom_point(aes(x= 0, y =0), color= "black")
   
+  if(sv2 == T){
+    svPlot(fileN2, plotPca)
+  }
+  return(plotPca)
 }
  
 
