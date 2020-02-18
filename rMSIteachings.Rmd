@@ -49,15 +49,7 @@ peakM <- rMSIproc::LoadPeakMatrix(file.path(wDir, peakData))
 
 
 # If your peak matrix is composed of multiple images this will separate them in multiple peak matrix
-matrixList <- list()
-
-for(i in 1:length(peakM$numPixels)){
-   limitDown <- sum(peakM$numPixels[1:(i-1)])+1
-    limitUp <- sum(peakM$numPixels[1:i])
-    if(i == 1){limitDown <- 1}
-    int <- limitDown:limitUp
- matrixList[[i]] <- rMSIproc::`[.rMSIprocPeakMatrix`(peakM, int)
-}
+matrixList <- sepMatrix(peakM)
 
 peakM$names 
 ```
@@ -65,10 +57,10 @@ peakM$names
 ### Order changing
 
 ```{r}
-# If you are not happy with the order of the images showed on peakM$names you can change it's order by entering here a    # vector with the desired order of images. This will actualize the peakM object with the new order
+# If you are not happy with the order of the images showed on peakM$names you can change it's order by entering here a  # vector with the desired order of images. This will actualize the peakM object with the new order
 
 newOrder <- c(1,2,5,6,3,4) # Insert here the new desired order and run the code chunk. It will require some time to finish
- 
+
 matrixList <- matrixList[newOrder]
 peakM <- rMSIproc::MergePeakMatrices(matrixList)
 ```
@@ -103,8 +95,8 @@ peakM$names
 mz2plot <- 100       # Tip # You can find all the mz in your data using peakM$mass
 img2plot <- c(1,3)   # Tip # Writing a vector c() allows you to plot more images at the same time
 normalization <- NA  # Choose between TIC/AcqTic/RMS normalizations // Leave it as NA for no normalization.
-save <- T            # Choose if you want to save the plots into a pdf file
-fileN <- "plotsA.pdf"      # Choose the name of the pdf file. Remember if you use the same name, the last one will be   
+save <- T            # Choose if you want to save the plots into a pdf file (T/F)
+fileN <- "plotsA.pdf"# Choose the name of the pdf file. Remember if you use the same name, the last one will be   
                      # overwritten
   
 plots <- initialPlotter(peakM, matrixList, mz2plot,img2plot, groupsImg, normalization, save, fileN)
@@ -126,7 +118,7 @@ Data normalization is a key step to remove part of the systematical error so the
 
 ```{r}
 # We can use rMSI functions to plot the average spectra of an image to explore the raw data
-# First you will need to put the .tar of the images on the same directory you are working on
+# Important: you will need to put the .tar of the images on the same directory you are working on
 
 bad <- list.files(wDir, pattern = "^ramdisk")
 imageName <- list.files(wDir, pattern = "proc.tar")
@@ -163,17 +155,28 @@ ggplotly(ggplot2::ggplot(avSepcData) + geom_line(aes(x = mass, y = aS), colour =
 #rMSI::plotSpectra(mass = image$mass, intensity = avSpec1)
 ```
 
+### Medium spectrum from peak matrix
+```{r}
+pixels2compare <- c(1:50)
+pixels2compare2 <- c(50:100)
+name1 <- "Cortex"
+name2 <- "Medula"
+normalization <- NA
+medSpecComp(peakM, pixels2compare, pixels2compare2 ,normalization, name1,name2)
 
+
+```
 
 ### PCA
 
 ```{r echo=FALSE, message=FALSE, warning=FALSE}
+data2use <- peakM   
 centering<- T 
 scaling  <- T
-normalization <- NA
+normalization <- "tic"
 
 
-pcaD <-pca(peakMatrix = peakM, centering, scaling, groupsImg, normalization)
+pcaD <-pca(data2use, centering, scaling, normalization)
 
 
 ```
@@ -186,29 +189,22 @@ pc2plot2 <- 2  #
 save <- T
 fileNpca <- "PC1vsPC2.pdf"
 
-pca2dimPlot(peakM, pcaD, groupsImg, pc2plot1,pc2plot2,save, fileNpca)
+plotly::ggplotly(pca2dimPlot(peakM, pcaD, groupsImg, pc2plot1,pc2plot2, save, fileNpca))
 
 ```
 
 ### PC plots on image
 
-```{r}
-pc2plot <-
-img2plotPca <-
-save <- 
-fileNpca2 <- "PC1xaqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq qqqwwwwwwwwwccccccccccccccccccccccccccccccccccccccccccccccccqaz<.pdf"
+```{r message=FALSE, warning=FALSE}
+pc2plot <- 1
+img2plotPca <- c(1,2)
+save <- T
+fileNpca2 <- "PCimg.pdf"
+
+pcaPlotImg(peakM, matrixList, pcaD, img2plotPca, groupsImg, pc2plot, save, fileNpca2)
   
 ```
 
-
-### Medium spectrum from peak matrix
-```{r}
-pixels2calculate <- c(1:50)
-normalization <- ""
-medSpec(peakM, pixels2calculate, normalization)
-
-
-```
 
 ### K-means
 
