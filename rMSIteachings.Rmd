@@ -32,7 +32,8 @@ rMSIproc::ProcessWizard()
 
 # Insert where your data is located (The peak matrix and the .tar images)
 wDir <- "C:/Users/jordi/Desktop/Metabolomica/Projecte MALDI/CollCap/" 
-
+dir2 <- "C:/Users/jordi/Documents/GitHub/rMSIteachings/"
+source(paste0(dir2, "initialPlotter.R")) # Sources all the functions we will need
 # Insert the name of the peak matrix .zip
 peakData <- "mergeddata-peaks.zip"
 
@@ -57,7 +58,8 @@ peakM$names
 ### Order changing
 
 ```{r}
-# If you are not happy with the order of the images showed on peakM$names you can change it's order by entering here a  # vector with the desired order of images. This will actualize the peakM object with the new order
+# If you are not happy with the order of the images showed on peakM$names you can change it's order by entering here a  
+# vector with the desired order of images. This will update the peakM object with the new order
 
 newOrder <- c(1,2,5,6,3,4) # Insert here the new desired order and run the code chunk. It will require some time to finish
 
@@ -69,7 +71,7 @@ peakM <- rMSIproc::MergePeakMatrices(matrixList)
 ###  Assigning groups
 
 ```{r}
-# To allow classification of the images in different groups you will need to insert the names of each group in the vector groupsImg in order as they are on the peak matrix
+# To allow classification of the images in different groups you will need to insert the names of each group in the vector groupsImg in the order they are on the peak matrix
 
 peakM$names # This allows you to see the order of the images on the peak matrix
 
@@ -77,9 +79,10 @@ peakM$names # This allows you to see the order of the images on the peak matrix
 # Note # If left empty each image will be named as especified on peakM$names.
 groupsImg <- c("Control1", "Control2", "Transition1", "Transition2", "Tumor1", "Tumor2")
 
+paste0(rep("Control",10),1:10) #If you have many images per experimental group you may want to use an expression like                                   #this
 
 
-if(groupsImg != length(peakM$names)){
+if(length(groupsImg) != length(peakM$names)){
   stop("Be careful. The number of groups is not equal to the number of images. Every image should have a group assigned")
 }
 
@@ -119,40 +122,23 @@ Data normalization is a key step to remove part of the systematical error so the
 ```{r}
 # We can use rMSI functions to plot the average spectra of an image to explore the raw data
 # Important: you will need to put the .tar of the images on the same directory you are working on
+medSpec <- medSpecRaw(wDir)
 
-bad <- list.files(wDir, pattern = "^ramdisk")
-imageName <- list.files(wDir, pattern = "proc.tar")
-imageName <- imageName[!(imageName %in% bad)]
 
-# Then we run the code so it extracts the image information and calculates the average spectrum
-avSpec <- lapply(imageName, function(name){
-  image <- rMSI::LoadMsiData(file.path(wDir, name))
-  mass <- image$mass
-  aS <- rMSIproc::AverageSpectrum(image) 
-  spect <- cbind(mass, aS)
-  return(spect)
-})
-
-avSepcData <- data.frame(avSpec)
-# row.names(avSepcData) <- imageName
+  # row.names(avSepcData) <- imageName
 # colnames(avSepcData) <- image$mass
 
  
 ```
 
-```{r}
+```{r message=FALSE, warning=FALSE}
 # Here we plot the average spectrums we want to compare
-
+img2compareRaw <- 
+img2compareRaw2 <-
 library(ggplot2)
 library(plotly)
-ggplotly(ggplot2::ggplot(avSepcData) + geom_line(aes(x = mass, y = aS), colour = "red"))
-# +
-#                    geom_line(aes(x = avSepcData$mass, y = avSepcData$aS.1),colour = "blue")+
-#                    geom_line(aes(x = avSepcData$mass, y = avSepcData$aS.2),colour = "yellow")+
-#                    geom_line(aes(x = avSepcData$mass, y = avSepcData$aS.3),colour = "green")+
-#                    geom_line(aes(x = avSepcData$mass, y = avSepcData$aS.4),colour = "orange")+
-#                    geom_line(aes(x = avSepcData$mass, y = avSepcData$aS.5),colour = "black")+ xlab("M/Z") + ylab("Intensity"))
-#rMSI::plotSpectra(mass = image$mass, intensity = avSpec1)
+medSpecRawplot(wDir, medSpec , img2compareRaw, img2compareRaw2)
+
 ```
 
 ### Medium spectrum from peak matrix

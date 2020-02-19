@@ -108,7 +108,31 @@ pcaPlotImg <- function(peakMatrix, matrixLst, pca, img ,grpImg, pc, sv, fileN){
   
 }
 
-medSpec <- function(peakMat, pixels, normalization = NA){
+medSpecRaw <- function(directory){
+  bad <- list.files(wDir, pattern = "^ramdisk")
+  imageName <- list.files(wDir, pattern = "proc.tar")
+  imageName <- imageName[!(imageName %in% bad)]
+
+  # Then we run the code so it extracts the image information and calculates the average spectrum
+  avSpec <- lapply(imageName, function(name){
+    image <- rMSI::LoadMsiData(file.path(wDir, name))
+    mass <- image$mass
+    aS <- rMSIproc::AverageSpectrum(image) 
+    specData <- cbind(mass, aS)
+    return(specData)
+  })
+  return(avSpec)
+}
+
+medSpecRawplot <- function(directory, specData ,spec2plot1, spec2plot2, color1, color2){
+ 
+  specplot <- ggplotly(ggplot2::ggplot() + geom_line(aes(x = specData[[spec2plot1]][,1], y = specData[[spec2plot1]][,2], colour = paste0("Image", spec2plot1))) + 
+                           geom_line(aes(x = specData[[spec2plot2]][,1], y = specData[[spec2plot2]][,2], colour = paste0("Image", spec2plot2))) +theme_minimal() + 
+                           xlab("Mass") + ylab("Intensity"))
+  return(specplot)
+}
+
+medSpecP <- function(peakMat, pixels, normalization = NA){
   data <- peakMat$intensity
   normalization <- toupper(normalization)
   if(!is.na(normalization)){
@@ -123,9 +147,10 @@ medSpec <- function(peakMat, pixels, normalization = NA){
   return(avgSpecpm)
 }
 
+
 medSpecComp <- function(peakMat, pixels1, pixels2, normalization, name1, name2){
-  medSpec1 <- medSpec(peakMat, pixels1, normalization)
-  medSpec2 <- medSpec(peakMat, pixels2, normalization)
+  medSpec1 <- medSpecP(peakMat, pixels1, normalization)
+  medSpec2 <- medSpecP(peakMat, pixels2, normalization)
   medSpecdf <- as.data.frame(cbind(medSpec1, medSpec2, peakM$mass))
   colnames(medSpecdf) <- c("Spec1", "Spec2", "Mass") 
 
