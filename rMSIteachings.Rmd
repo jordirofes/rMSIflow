@@ -31,15 +31,18 @@ rMSIproc::ProcessWizard()
 ```{r}
 
 # Insert where your data is located (The peak matrix and the .tar images)
-wDir <- "C:/Users/jordi/Desktop/Metabolomica/Projecte MALDI/CollCap/" 
+wDir <- "C:/Users/jordi/Desktop/Metabolomica/Projecte MALDI/CollCap/"
+# Insert here where your the document initialPlotter.R is located
 dir2 <- "C:/Users/jordi/Documents/GitHub/rMSIteachings/"
-source(paste0(dir2, "initialPlotter.R")) # Sources all the functions we will need
 # Insert the name of the peak matrix .zip
 peakData <- "mergeddata-peaks.zip"
 
 
-```
+source(paste0(dir2, "initialPlotter.R")) # This sources all the functions we will need
 
+
+
+```
 
 ### Extracting the Peak Matrix
 
@@ -76,8 +79,8 @@ peakM <- rMSIproc::MergePeakMatrices(matrixList)
 peakM$names # This allows you to see the order of the images on the peak matrix
 
 # Insert the group for each image (control, control, problem, ...) in the order they are on the peak matrix
-# Note # If left empty each image will be named as especified on peakM$names.
-groupsImg <- c("Control1", "Control2", "Transition1", "Transition2", "Tumor1", "Tumor2")
+# Note # If you input NA. Each group will have the name in peakM$names
+groupsImg <- c("Tumor1", "Tumor2", "Healthy1", "Healthy2", "Transition1", "Transition2")
 
 paste0(rep("Control",10),1:10) #If you have many images per experimental group you may want to use an expression like                                   #this
 
@@ -95,15 +98,14 @@ if(length(groupsImg) != length(peakM$names)){
 
 # Select m/z to plot and image number out of peakM$names to plot
 peakM$names
-mz2plot <- 100       # Tip # You can find all the mz in your data using peakM$mass
-img2plot <- c(1,3)   # Tip # Writing a vector c() allows you to plot more images at the same time
+mz2plot <- 100       # You can find all the mz in your data using peakM$mass
+img2plot <- 3        # Writing a vector c() allows you to plot more images at the same time. Input a 0 to plot all the                        # images in a non interactive way
 normalization <- NA  # Choose between TIC/AcqTic/RMS normalizations // Leave it as NA for no normalization.
 save <- T            # Choose if you want to save the plots into a pdf file (T/F)
-fileN <- "plotsA.pdf"# Choose the name of the pdf file. Remember if you use the same name, the last one will be   
-                     # overwritten
-  
-plots <- initialPlotter(peakM, matrixList, mz2plot,img2plot, groupsImg, normalization, save, fileN)
-plotly::subplot(plots)
+fileN <- "plotsA.pdf"# Choose the name of the pdf file. If a file has the same name it will be overwritten
+
+
+initialPlotter(peakM, matrixList, mz2plot,img2plot, groupsImg, normalization, save, fileN)
 
 
 ```
@@ -112,7 +114,7 @@ plotly::subplot(plots)
 
 Data normalization is a key step to remove part of the systematical error so the data represents more the biological variation
   There are several ways to normalize the data:
-     TIC (Total Ion Count): 
+     TIC (Total Ion Count): TIC divides every pixel by it's mean 
      AcqTic (Acquired TIC):
      RMS (Root Mean Squares):
 
@@ -121,34 +123,37 @@ Data normalization is a key step to remove part of the systematical error so the
 
 ```{r}
 # We can use rMSI functions to plot the average spectra of an image to explore the raw data
-# Important: you will need to put the .tar of the images on the same directory you are working on
+# Make sure that the .tar of the images is on the same directory you are working on
 medSpec <- medSpecRaw(wDir)
 
-
-  # row.names(avSepcData) <- imageName
-# colnames(avSepcData) <- image$mass
-
- 
 ```
 
 ```{r message=FALSE, warning=FALSE}
 # Here we plot the average spectrums we want to compare
-img2compareRaw <- 
-img2compareRaw2 <-
+avSpecimg2plot <- c(1,3,6)  # Select the images you want to compare. Writing c(1,2,3) allows you to plot more than 
+                            # one image at the same time
+
 library(ggplot2)
 library(plotly)
-medSpecRawplot(wDir, medSpec , img2compareRaw, img2compareRaw2)
+medSpecRawplot(wDir, medSpec , avSpecimg2plot)
 
 ```
 
-### Medium spectrum from peak matrix
+### Medium spectrum from peak matrix from selected pixels
 ```{r}
-pixels2compare <- c(1:50)
-pixels2compare2 <- c(50:100)
-name1 <- "Cortex"
-name2 <- "Medula"
-normalization <- NA
-medSpecComp(peakM, pixels2compare, pixels2compare2 ,normalization, name1,name2)
+# This function makes the medium spectrum from selectec pixels from the peak matrix
+
+dataMat <- peakM$intensity  # Data used to make the medium spectrum 
+pixels2compare <- c(1:50)   # Input the first set of pixels that are going to be compared
+pixels2compare2 <- c(51:100)# Input the second set of pixels that are going to be compared 
+                            
+name1 <- "Cortex"           # Insert a tag for the first set of pixels
+name2 <- "Medula"           # Insert a tag for the second set of pixels
+normalization <- NA         # Choose between TIC/RMS/AcqTic normalizations. Leave it NA for no normalization
+save1 <- F                  # Choose if you want to save the plots into a pdf file (T/F)
+fileName1 <- ".pdf"         # Choose the name of the pdf file. If a file has the same name it will be overwritten
+
+medSpecComp(peakM, dataMat ,pixels2compare, pixels2compare2 ,normalization, name1,name2, save1, fileName1)
 
 
 ```
@@ -156,13 +161,14 @@ medSpecComp(peakM, pixels2compare, pixels2compare2 ,normalization, name1,name2)
 ### PCA
 
 ```{r echo=FALSE, message=FALSE, warning=FALSE}
-data2use <- peakM   
-centering<- T 
-scaling  <- T
-normalization <- "tic"
+data2use <- peakM$intensity   # Data used to make the PCA.
+centering<- T                 # The centering ensures the data is found within the 0/0 origin
+scaling  <- T                 # The scaling equalizes the data variance to decrease the bias from different data 
+                              # intensities
+normalization <- "tic"        # Choose between TIC/RMS/AcqTic normalizarions. Leave it NA for no normalization
 
 
-pcaD <-pca(data2use, centering, scaling, normalization)
+pcaD <-pca(peakM, data2use, centering, scaling, normalization)
 
 
 ```
@@ -172,22 +178,23 @@ pcaD <-pca(data2use, centering, scaling, normalization)
 ```{r}
 pc2plot1 <- 1  # Select which PC are going to be plotted in a two dimensional graphic
 pc2plot2 <- 2  # 
-save <- T
-fileNpca <- "PC1vsPC2.pdf"
+save2 <- T     # Select if you want to save the plot into a pdf file (T/F)
+fileNpca2 <- "PC1vsPC2.pdf" # Choose the name of the file. Remember if there is another file with the same name it will 
+                            # be overwritten
 
-plotly::ggplotly(pca2dimPlot(peakM, pcaD, groupsImg, pc2plot1,pc2plot2, save, fileNpca))
+plotly::ggplotly(pca2dimPlot(peakM, pcaD, groupsImg, pc2plot1,pc2plot2, save2, fileNpca2))
 
 ```
 
 ### PC plots on image
 
 ```{r message=FALSE, warning=FALSE}
-pc2plot <- 1
-img2plotPca <- c(1,2)
-save <- T
-fileNpca2 <- "PCimg.pdf"
+pc2plot <- 1        # Select which PC to plot into the images
+img2plotPca <- 0    # Select which images to plot. Using c() allows you to plot more images at the same time. 
+save3 <- F
+fileNpca3 <- "PCimg.pdf"
 
-pcaPlotImg(peakM, matrixList, pcaD, img2plotPca, groupsImg, pc2plot, save, fileNpca2)
+pcaPlotImg(peakM, matrixList, pcaD, img2plotPca, groupsImg, pc2plot, save3, fileNpca3)
   
 ```
 
@@ -196,26 +203,12 @@ pcaPlotImg(peakM, matrixList, pcaD, img2plotPca, groupsImg, pc2plot, save, fileN
 
 ```{r warning=FALSE}
 
-dataNormTic <- peakM$intensity/peakM$normalizations$TIC ### Dividim les intensitats pel factor de normalització TIC 
+data2clus <- peakM$intensity
+norm4 <- NA
+numClusters <- 4
 
-clData <- vector(mode = "list",length = length(peakM$numPixels)) 
+kmeansCluster(peakM, data2clus, norm4, numClusters)
 
-for (i in 1:length(peakM$numPixels)){ 
- if (i == 1){
-    clData[i] <- list(kmeans(dataNormTic[1:peakM$numPixels[i], ], 5))
- } else {
-    clData[i] <- list(kmeans(dataNormTic[(sum(peakM$numPixels[1:(i-1)])+1):sum(peakM$numPixels[1:i]), ], 5))
- }
-}
-
-clusImages <- lapply(clData, function(x){
-  return(x[1]) 
-})
-
-allClusImages <- unlist(clusImages)
-
-
-plotly::ggplotly(rMSIproc::plotValuesImageG(peakM, allClusImages))
 
 ```
 

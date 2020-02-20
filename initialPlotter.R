@@ -1,3 +1,5 @@
+### This funcion separates all the images
+
 sepMatrix <- function(peakmatrix){
   matrixList <- list()
   
@@ -11,13 +13,13 @@ sepMatrix <- function(peakmatrix){
   return(matrixList)
 }
 
-
-
-
 ### This function plots the intensities of a given mass on the images
 
 initialPlotter <- function(pM, matrixL, mz, img, groups, norm = NA, sv, file){
   a <- vector("list", length(img))
+  if(is.na(groups)){
+    groups <-  pM$names}
+  
   if (img == 0){
       a <- rMSIproc::plotPeakImageG(pM, mz, plot_labels = groups, normalization = norm)
       if(sv == T){svPlot(file, a)}
@@ -31,8 +33,10 @@ initialPlotter <- function(pM, matrixL, mz, img, groups, norm = NA, sv, file){
     plotly::ggplotly(p = a[[i]])
   })
   if(sv == T){svPlot(file, a)}
-  return(pl)
+  return(subplot(pl))
 }
+
+### This function saves given plot on a pdf file
 
 svPlot <- function(flName, plots2save){
   pdf(flName)
@@ -43,26 +47,29 @@ svPlot <- function(flName, plots2save){
 
 ### This function makes a PCA from the peak matrix
 
-pca <- function(peakMatrix, cnt, scl, norm = NA){
-  dataRaw <- peakMatrix$intensity
+pca <- function(peakMatrix, dataPca , cnt, scl, norm = NA){
   norm <- toupper(norm)
   if(!is.na(norm)){
-    if(norm == "TIC"){dataRaw/peakMatrix$normalization$TIC}
-    else if(norm == "RMS"){dataRaw/peakMatrix$normalization$RMS}
-    else if(norm  == "ACQTIC"){dataRaw/peakMatrix$normalization$AcqTic}
+    if(norm == "TIC"){ dataPca <- dataPca/peakMatrix$normalization$TIC}
+    else if(norm == "RMS"){dataPca <- dataPca/peakMatrix$normalization$RMS}
+    else if(norm  == "ACQTIC"){dataPca <- dataPca/peakMatrix$normalization$AcqTic}
     else {stop("The normalization name is not one of the list. Check if you've written it correctly or if you don't want the data to be normalized write a NA in normalization")}
   }
-     colnames(dataRaw) <- peakMatrix$mass
-  pcaRaw <- prcomp(dataRaw, center = cnt, scale. = scl) ### Fem la PCA de la matriu de pics
-  return(pcaRaw)
+     colnames(dataPca) <- peakMatrix$mass
+  pca <- prcomp(dataPca, center = cnt, scale. = scl) ### Fem la PCA de la matriu de pics
+  return(pca)
 }
 
-## This function creates a two dimensional plot with the especified principal components
+### This function creates a two dimensional plot with the especified principal components
 
 pca2dimPlot <- function(peakMatrix, pca, grpImg, pc1, pc2, sv2, fileN2) {
+  if(!is.na(grpImg)){
   listGroups <- mapply(function(groups,i){
     rep(groups,  peakMatrix$numPixels[i])
   }, grpImg, 1:length(grpImg))
+  } else {listGroups <- mapply(function(groups,i){
+    rep(groups,  peakMatrix$numPixels[i])
+  }, peakMatrix$names, 1:length(peakMatrix$names)) }
   
   vectorGroups <- unlist(listGroups)
   pcaData <- list()
@@ -84,8 +91,12 @@ pca2dimPlot <- function(peakMatrix, pca, grpImg, pc1, pc2, sv2, fileN2) {
   return(plotPca)
 }
 
+### This function plots a chosen principal component into selected images
+
 pcaPlotImg <- function(peakMatrix, matrixLst, pca, img ,grpImg, pc, sv, fileN){
   a <- vector("list", length(img))
+  if(is.na(grpImg)){ grpImg <- peakMatrix$names}
+  
   if (img == 0){
     a <- rMSIproc::plotValuesImageG(peakMatrix, pixel_values = pca$x[,pc], plot_labels =  grpImg)
       if(sv == T){svPlot(fileN, a)}
@@ -108,6 +119,8 @@ pcaPlotImg <- function(peakMatrix, matrixLst, pca, img ,grpImg, pc, sv, fileN){
   
 }
 
+### These functions plot the Average Raw Spectrum of selected images in an interactive way
+
 medSpecRaw <- function(directory){
   bad <- list.files(wDir, pattern = "^ramdisk")
   imageName <- list.files(wDir, pattern = "proc.tar")
@@ -124,21 +137,29 @@ medSpecRaw <- function(directory){
   return(avSpec)
 }
 
-medSpecRawplot <- function(directory, specData ,spec2plot1, spec2plot2, color1, color2){
- 
-  specplot <- ggplotly(ggplot2::ggplot() + geom_line(aes(x = specData[[spec2plot1]][,1], y = specData[[spec2plot1]][,2], colour = paste0("Image", spec2plot1))) + 
-                           geom_line(aes(x = specData[[spec2plot2]][,1], y = specData[[spec2plot2]][,2], colour = paste0("Image", spec2plot2))) +theme_minimal() + 
-                           xlab("Mass") + ylab("Intensity"))
-  return(specplot)
+medSpecRawplot <- function(specData, img2plot2){
+  
+specPlot <- ggplot()
+parsed <- lapply(img2plot2, function(x){
+  data.frame(mz = specData[[x]][,1], int = specData[[x]][,2], image = rep(paste("Image",x),
+             times = nrow(specData[[x]])))
+})
+parsed <- do.call(rbind, parsed)
+  plots2 <- ggplotly(ggplot(parsed) + geom_line(aes(x = mz, y = int, 
+                          colour = image)) + theme_minimal() + xlab("Mass") + ylab("Intensity") + 
+                          theme(legend.title = element_blank()))
+   return(plots2)
 }
 
-medSpecP <- function(peakMat, pixels, normalization = NA){
+### These functions plot the Average Spectrum of the peak matrix
+
+medSpecP <- function(peakMat, dataMat ,pixels, normalization = NA){
   data <- peakMat$intensity
   normalization <- toupper(normalization)
   if(!is.na(normalization)){
-    if(normalization == "TIC"){data/peakMat$normalization$TIC}
-    else if(normalization == "RMS"){data/peakMat$normalization$RMS}
-    else if(normalization == "ACQTIC"){data/peakMat$normalization$AcqTic}
+    if(normalization == "TIC"){data <- data/peakMat$normalization$TIC}
+    else if(normalization == "RMS"){data <- data/peakMat$normalization$RMS}
+    else if(normalization == "ACQTIC"){data <- data/peakMat$normalization$AcqTic}
     else {stop("The normalization name is not one of the list. Check if you've written it correctly or if you don't want the data to be normalized write a NA in normalization")}
   }
   pixelMatrix <- peakMat$intensity[pixels,]
@@ -147,18 +168,36 @@ medSpecP <- function(peakMat, pixels, normalization = NA){
   return(avgSpecpm)
 }
 
-
-medSpecComp <- function(peakMat, pixels1, pixels2, normalization, name1, name2){
-  medSpec1 <- medSpecP(peakMat, pixels1, normalization)
-  medSpec2 <- medSpecP(peakMat, pixels2, normalization)
-  medSpecdf <- as.data.frame(cbind(medSpec1, medSpec2, peakM$mass))
-  colnames(medSpecdf) <- c("Spec1", "Spec2", "Mass") 
-
-  aveSpec <- plotly::ggplotly(ggplot(medSpecdf) + geom_segment(aes(x = Mass,y = 0, xend = Mass, yend = Spec1, colour = name1)) +
-             geom_segment(aes(x = Mass, y = 0, xend = Mass, yend = Spec2, colour = name2))  +
-             xlab("Mass") + ylab("Intensity") + theme_minimal() + theme(legend.title = element_blank())
-             
-             )
-  return(aveSpec)
+# medSpecComp <- function(peakMat, pixels1, pixels2, normalization, name1, name2, sav2, filename2)
+  
+  
+### K-means
+  
+kmeansCluster <- function(peakmatrix, clusData ,norm4, numCl){
+  
+  norm <- toupper(norm4)
+  if(!is.na(norm)){
+    if(norm == "TIC"){ clusData <- clusData/peakmatrix$normalization$TIC}
+    else if(norm == "RMS"){clusData <- clusData/peakmatrix$normalization$RMS}
+    else if(norm  == "ACQTIC"){clusData <-clusData/peakmatrix$normalization$AcqTic}
+    else {stop("The normalization name is not one of the list. Check if you've written it correctly or if you don't want the data to be normalized write a NA in normalization")}
+  }
+  clData <- list()
+  
+  for (i in 1:length(peakmatrix$numPixels)){ 
+    if (i == 1){
+      clData[[i]] <- kmeans(clusData[1:peakmatrix$numPixels[i], ], numCl)
+    } else {
+      clData[[i]] <- kmeans(clusData[(sum(peakmatrix$numPixels[1:(i-1)])+1):sum(peakmatrix$numPixels[1:i]), ], numCl)
+    }
+  }
+  clusImages <- lapply(clData, function(x){
+    return(x[1]) 
+  })
+  allClusImages <- unlist(clusImages)
+  
+  
+  return(plotly::ggplotly(rMSIproc::plotValuesImageG(peakmatrix, allClusImages)))
+  
 }
 
