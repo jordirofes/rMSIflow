@@ -1,27 +1,29 @@
 ### This funcion separates all the images
 
-sepMatrix <- function(peakmatrix){
+sepMatrix <- function(peakMatrix){
   matrixList <- list()
-  
-  for(i in 1:length(peakM$numPixels)){
-    limitDown <- sum(peakM$numPixels[1:(i-1)])+1
-    limitUp <- sum(peakM$numPixels[1:i])
+  if(length(peakMatrix$numPixels) == 1){
+    matrixList[[1]] <- peakMatrix
+  } else {
+  for(i in 1:length(peakMatrix$numPixels)){
+    limitDown <- sum(peakMatrix$numPixels[1:(i-1)])+1
+    limitUp <- sum(peakMatrix$numPixels[1:i])
     if(i == 1){limitDown <- 1}
     int <- limitDown:limitUp
-    matrixList[[i]] <- rMSIproc::`[.rMSIprocPeakMatrix`(peakM, int)
+    matrixList[[i]] <- rMSIproc::`[.rMSIprocPeakMatrix`(peakMatrix, int)}
   }
   return(matrixList)
 }
 
 ### This function plots the intensities of a given mass on the images
 
-initialPlotter <- function(pM, matrixL, mz, img, groups, norm = NA, sv, file){
+initialPlotter <- function(peakMatrix, matrixL, mz, img, groups, norm = NA, sv, file){
   a <- vector("list", length(img))
   if(is.na(groups)){
-    groups <-  pM$names}
-  
+    groups <-  peakMatrix$names
+    }
   if (img == 0){
-      a <- rMSIproc::plotPeakImageG(pM, mz, plot_labels = groups, normalization = norm)
+      a <- rMSIproc::plotPeakImageG(peakMatrix, mz, plot_labels = groups, normalization = norm)
       if(sv == T){svPlot(file, a)}
       return(a)
   } else{
@@ -47,14 +49,11 @@ svPlot <- function(flName, plots2save){
 
 ### This function makes a PCA from the peak matrix
 
-pca <- function(peakMatrix, dataPca , cnt, scl, norm = NA){
-  norm <- toupper(norm)
+pca <- function(peakMatrix, cnt, scl, norm = NA){
+  dataPca <- peakMatrix$intensity
   if(!is.na(norm)){
-    if(norm == "TIC"){ dataPca <- dataPca/peakMatrix$normalization$TIC}
-    else if(norm == "RMS"){dataPca <- dataPca/peakMatrix$normalization$RMS}
-    else if(norm  == "ACQTIC"){dataPca <- dataPca/peakMatrix$normalization$AcqTic}
-    else {stop("The normalization name is not one of the list. Check if you've written it correctly or if you don't want the data to be normalized write a NA in normalization")}
-  }
+    dataPca <- dataPca/norm
+    }
      colnames(dataPca) <- peakMatrix$mass
   pca <- prcomp(dataPca, center = cnt, scale. = scl) ### Fem la PCA de la matriu de pics
   return(pca)
@@ -153,51 +152,69 @@ parsed <- do.call(rbind, parsed)
 
 ### These functions plot the Average Spectrum of the peak matrix
 
-medSpecP <- function(peakMat, dataMat ,pixels, normalization = NA){
-  data <- peakMat$intensity
-  normalization <- toupper(normalization)
+medSpecP <- function(peakMatrix, pixels, norm = NA){
+  data <- peakMatrix$intensity
   if(!is.na(normalization)){
-    if(normalization == "TIC"){data <- data/peakMat$normalization$TIC}
-    else if(normalization == "RMS"){data <- data/peakMat$normalization$RMS}
-    else if(normalization == "ACQTIC"){data <- data/peakMat$normalization$AcqTic}
-    else {stop("The normalization name is not one of the list. Check if you've written it correctly or if you don't want the data to be normalized write a NA in normalization")}
+    data <- data/norm
   }
-  pixelMatrix <- peakMat$intensity[pixels,]
+  pixelMatrix <- peakMatrix$intensity[pixels,]
   avgSpecpm <- apply(pixelMatrix, 2, mean)
                              
   return(avgSpecpm)
 }
 
-# medSpecComp <- function(peakMat, pixels1, pixels2, normalization, name1, name2, sav2, filename2)
+medSpecComp <- function(peakMat, pixels1, pixels2, normalization, name1, name2, sav2, filename2)
   
   
 ### K-means
   
-kmeansCluster <- function(peakmatrix, clusData ,norm4, numCl){
+kmeansCluster <- function(peakMatrix, norm, numCl){
+  clusData <- peakMatrix$intensity
   
-  norm <- toupper(norm4)
   if(!is.na(norm)){
-    if(norm == "TIC"){ clusData <- clusData/peakmatrix$normalization$TIC}
-    else if(norm == "RMS"){clusData <- clusData/peakmatrix$normalization$RMS}
-    else if(norm  == "ACQTIC"){clusData <-clusData/peakmatrix$normalization$AcqTic}
-    else {stop("The normalization name is not one of the list. Check if you've written it correctly or if you don't want the data to be normalized write a NA in normalization")}
+    clusData <- clusData/norm
   }
+  
   clData <- list()
   
-  for (i in 1:length(peakmatrix$numPixels)){ 
-    if (i == 1){
-      clData[[i]] <- kmeans(clusData[1:peakmatrix$numPixels[i], ], numCl)
-    } else {
-      clData[[i]] <- kmeans(clusData[(sum(peakmatrix$numPixels[1:(i-1)])+1):sum(peakmatrix$numPixels[1:i]), ], numCl)
-    }
+  for (i in 1:length(peakMatrix$numPixels)){ 
+    limitDown <- sum(peakMatrix$numPixels[1:(i-1)])+1
+    limitUp <- sum(peakMatrix$numPixels[1:i])
+    int <-limitDown:limitUp
+    if (i == 1){ limitDown <- 1}                                                 
+    
+      clData[[i]] <- kmeans(clusData[limitDown:limitUp, ], numCl)
+    
   }
   clusImages <- lapply(clData, function(x){
     return(x[1]) 
   })
-  allClusImages <- unlist(clusImages)
   
+  return(clusImages)
   
-  return(plotly::ggplotly(rMSIproc::plotValuesImageG(peakmatrix, allClusImages)))
+}
+
+clusterDataPlotting <- function(peakMatrix, matrixL, img, groups, clusterData, sv, file){
+  if(img == 0){
+    allClusImages <- unlist(clusterData)
+    kplot <- rMSIproc::plotClusterImageG(peakMatrix, allClusImages)
+    if(sv == T){svPlot(file, kplot)}
+    return(kplot)
+  } else{
+  
+    allClusImages <- unlist(clusterData, recursive = FALSE)
+  kplot <- lapply(img, function(x){
+      plots <- rMSIproc::plotClusterImageG(matrixL[[x]], allClusImages[[x]])
+      return(plots)
+  })
+  if(sv == T){svPlot(file, kplot)}
+  return(subplot(kplot))
+  kplot <- lapply(kplots, function(x){
+    plots <- ggplotly(kplots)
+    return(plots)
+  })
+  return(subplot(kplot))
+  }
   
 }
 

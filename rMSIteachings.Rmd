@@ -28,7 +28,7 @@ rMSIproc::ProcessWizard()
 
 ### Preparations
 
-```{r}
+```{r warning=FALSE}
 
 # Insert where your data is located (The peak matrix and the .tar images)
 wDir <- "C:/Users/jordi/Desktop/Metabolomica/Projecte MALDI/CollCap/"
@@ -39,7 +39,8 @@ peakData <- "mergeddata-peaks.zip"
 
 
 source(paste0(dir2, "initialPlotter.R")) # This sources all the functions we will need
-
+library(ggplot2)
+library(plotly)
 
 
 ```
@@ -91,18 +92,18 @@ if(length(groupsImg) != length(peakM$names)){
 
 ```
 
-
 ### Exploring the peak matrix
 
 ```{r echo=FALSE, warning=FALSE}
 
 # Select m/z to plot and image number out of peakM$names to plot
 peakM$names
-mz2plot <- 100       # You can find all the mz in your data using peakM$mass
-img2plot <- 3        # Writing a vector c() allows you to plot more images at the same time. Input a 0 to plot all the                        # images in a non interactive way
-normalization <- NA  # Choose between TIC/AcqTic/RMS normalizations // Leave it as NA for no normalization.
-save <- T            # Choose if you want to save the plots into a pdf file (T/F)
-fileN <- "plotsA.pdf"# Choose the name of the pdf file. If a file has the same name it will be overwritten
+mz2plot <- 100         # You can find all the mz in your data using peakM$mass
+img2plot <- 1          # Writing a vector c() allows you to plot more images at the same time. Input a 0 to plot all the                        # images in a non interactive way
+normalization <- peakM$normalizations$TIC  # Input here a vector with the normalization values. Input NA for no 
+                                           # normalization.
+save <- F                 # Choose if you want to save the plots into a pdf file (T/F)
+fileN <- "plotsRAW.pdf"   # Choose the name of the pdf file. If a file has the same name it will be overwritten
 
 
 initialPlotter(peakM, matrixList, mz2plot,img2plot, groupsImg, normalization, save, fileN)
@@ -143,17 +144,16 @@ medSpecRawplot(wDir, medSpec , avSpecimg2plot)
 ```{r}
 # This function makes the medium spectrum from selectec pixels from the peak matrix
 
-dataMat <- peakM$intensity  # Data used to make the medium spectrum 
 pixels2compare <- c(1:50)   # Input the first set of pixels that are going to be compared
 pixels2compare2 <- c(51:100)# Input the second set of pixels that are going to be compared 
                             
 name1 <- "Cortex"           # Insert a tag for the first set of pixels
 name2 <- "Medula"           # Insert a tag for the second set of pixels
-normalization <- NA         # Choose between TIC/RMS/AcqTic normalizations. Leave it NA for no normalization
+normalization <- peakM$normalizations$TIC   # Choose between TIC/RMS/AcqTic normalizations. Leave it NA for no normalization
 save1 <- F                  # Choose if you want to save the plots into a pdf file (T/F)
 fileName1 <- ".pdf"         # Choose the name of the pdf file. If a file has the same name it will be overwritten
 
-medSpecComp(peakM, dataMat ,pixels2compare, pixels2compare2 ,normalization, name1,name2, save1, fileName1)
+medSpecComp(peakM, dataMat ,pixels2compare, pixels2compare2 , normalization, name1, name2, save1, fileName1)
 
 
 ```
@@ -161,15 +161,12 @@ medSpecComp(peakM, dataMat ,pixels2compare, pixels2compare2 ,normalization, name
 ### PCA
 
 ```{r echo=FALSE, message=FALSE, warning=FALSE}
-data2use <- peakM$intensity   # Data used to make the PCA.
 centering<- T                 # The centering ensures the data is found within the 0/0 origin
 scaling  <- T                 # The scaling equalizes the data variance to decrease the bias from different data 
                               # intensities
-normalization <- "tic"        # Choose between TIC/RMS/AcqTic normalizarions. Leave it NA for no normalization
+normalization <- peakM$normalizations$TIC  # Choose between TIC/RMS/AcqTic normalizarions. Leave it NA for no normalization
 
-
-pcaD <-pca(peakM, data2use, centering, scaling, normalization)
-
+pcaD <-pca(peakM, centering, scaling, normalization)
 
 ```
 
@@ -179,8 +176,7 @@ pcaD <-pca(peakM, data2use, centering, scaling, normalization)
 pc2plot1 <- 1  # Select which PC are going to be plotted in a two dimensional graphic
 pc2plot2 <- 2  # 
 save2 <- T     # Select if you want to save the plot into a pdf file (T/F)
-fileNpca2 <- "PC1vsPC2.pdf" # Choose the name of the file. Remember if there is another file with the same name it will 
-                            # be overwritten
+fileNpca2 <- "PC1vsPC2.pdf" # Name of the .pdf file
 
 plotly::ggplotly(pca2dimPlot(peakM, pcaD, groupsImg, pc2plot1,pc2plot2, save2, fileNpca2))
 
@@ -189,10 +185,10 @@ plotly::ggplotly(pca2dimPlot(peakM, pcaD, groupsImg, pc2plot1,pc2plot2, save2, f
 ### PC plots on image
 
 ```{r message=FALSE, warning=FALSE}
-pc2plot <- 1        # Select which PC to plot into the images
-img2plotPca <- 0    # Select which images to plot. Using c() allows you to plot more images at the same time. 
-save3 <- F
-fileNpca3 <- "PCimg.pdf"
+pc2plot <- 1             # Select which PC to plot into the images
+img2plotPca <- 0         # Select which images to plot. Using c() allows you to plot more images at the same time. 
+save3 <- F               # Save the plot into a pdf file (T/F)
+fileNpca3 <- "PCimg.pdf" # Name of the .pdf file
 
 pcaPlotImg(peakM, matrixList, pcaD, img2plotPca, groupsImg, pc2plot, save3, fileNpca3)
   
@@ -202,18 +198,25 @@ pcaPlotImg(peakM, matrixList, pcaD, img2plotPca, groupsImg, pc2plot, save3, file
 ### K-means
 
 ```{r warning=FALSE}
+norm4 <- peakM$normalizations$TIC   # Normalization applied to the data
+numClusters <- 4                    # Number of cluster to make the k-means
 
-data2clus <- peakM$intensity
-norm4 <- NA
-numClusters <- 4
-
-kmeansCluster(peakM, data2clus, norm4, numClusters)
-
+kmeansData <- kmeansCluster(peakM, data2clus, norm4, numClusters)
 
 ```
 
 
+### K-means segmentation plots
 
+```{r}
+img2plot = c(1,3)   # Images you want to ploy. 
+save3 = F           # Save the plot into a pdf file (T/F)   
+fileName3 = ".pdf"  # Name of the .pdf file
+
+clusterDataPlotting(peakM, matrixList, img2plot, groupsImg, kmeansData, save3, fileName3)
+
+
+```
 
 
 
