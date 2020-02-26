@@ -17,7 +17,7 @@ sepMatrix <- function(peakMatrix){
 
 ### This function plots the intensities of a given mass on the images
 
-initialPlotter <- function(peakMatrix, matrixL, mz, img, groups, norm = NA, sv, file){
+initialPlotter <- function(peakMatrix, matrixL, mz, img, groups, norm, sv, file){
   a <- vector("list", length(img))
   if(is.na(groups)){
     groups <-  peakMatrix$names
@@ -163,7 +163,21 @@ medSpecP <- function(peakMatrix, pixels, norm = NA){
   return(avgSpecpm)
 }
 
-medSpecComp <- function(peakMat, pixels1, pixels2, normalization, name1, name2, sav2, filename2)
+medSpecComp <- function(peakMat, pixels1, pixels2, normalization, name1, name2, sav2, filename2){
+  medSpec1 <- medSpecP(peakMat, pixels1, normalization)
+  medSpec2 <- medSpecP(peakMat, pixels2, normalization)
+  medSpecdf <- as.data.frame(cbind(medSpec1, medSpec2, peakM$mass))
+  colnames(medSpecdf) <- c("Spec1", "Spec2", "Mass") 
+  
+  aveSpec <- ggplot(medSpecdf) + geom_segment(aes(x = Mass,y = 0, xend = Mass, yend = Spec1, colour = name1)) +
+                                geom_segment(aes(x = Mass, y = 0, xend = Mass, yend = Spec2, colour = name2))  +
+                                xlab("Mass") + ylab("Intensity") + theme_minimal() + theme(legend.title = element_blank())
+  
+  if(sav2 == T){ svPlot(filename2, aveSpec)}
+  aveSpecInteractive <- ggplotly(aveSpec)
+  return(aveSpecInteractive)
+  
+}
   
   
 ### K-means

@@ -9,8 +9,7 @@ output: html_document
 rMSI and rMSIproc are R packages that allow the visualization of MALDIims data (rMSI) and the data processing from all the pixel spectrums to a peak matrix (rMSIproc). This tutorial wants to provide a standardized workflow for scientists analyzing different rMSIproc peak matrixs obtained from different images. This tutorial will explain how to: explore the peak matrix to visualize the different m/z intensities on the images, what normalization steps should be utilized when comparing different peak matrix, how to visualize the medium spectrum of the raw data, the application of multidimensional reduction methods (PCA), the utilization of clustering methods like Kmeans and SOM to find clusters of similar spectrums that can be related to differences between different tissue zones and the visualization and comparison of those clusters.
 
 ### Required Packages
-For this tutorial you will need to install [rMSI](https://github.com/prafols/rMSI), [rMSIproc](https://github.com/prafols/rMSIproc), [ggplot2](), [plotly]() packages if you don't have them.
-
+For this tutorial you will need to install [rMSI](https://github.com/prafols/rMSI), [rMSIproc](https://github.com/prafols/rMSIproc), [ggplot2](https://github.com/tidyverse/ggplot2), [plotly](https://github.com/plotly/dashR) packages if you don't have them.
 
 ### rMSI
 ```{r}
@@ -28,7 +27,7 @@ rMSIproc::ProcessWizard()
 
 ### Preparations
 
-```{r warning=FALSE}
+```{r message=FALSE, warning=FALSE}
 
 # Insert where your data is located (The peak matrix and the .tar images)
 wDir <- "C:/Users/jordi/Desktop/Metabolomica/Projecte MALDI/CollCap/"
@@ -83,7 +82,7 @@ peakM$names # This allows you to see the order of the images on the peak matrix
 # Note # If you input NA. Each group will have the name in peakM$names
 groupsImg <- c("Tumor1", "Tumor2", "Healthy1", "Healthy2", "Transition1", "Transition2")
 
-paste0(rep("Control",10),1:10) #If you have many images per experimental group you may want to use an expression like                                   #this
+paste0(rep("Control",10),1:10) #If you have many images per experimental group you may want to use an expression like this
 
 
 if(length(groupsImg) != length(peakM$names)){
@@ -98,10 +97,9 @@ if(length(groupsImg) != length(peakM$names)){
 
 # Select m/z to plot and image number out of peakM$names to plot
 peakM$names
-mz2plot <- 100         # You can find all the mz in your data using peakM$mass
-img2plot <- 1          # Writing a vector c() allows you to plot more images at the same time. Input a 0 to plot all the                        # images in a non interactive way
-normalization <- peakM$normalizations$TIC  # Input here a vector with the normalization values. Input NA for no 
-                                           # normalization.
+mz2plot <- 100            # You can find all the mz in your data using peakM$mass
+img2plot <- c(2,3)        # Writing a vector c() allows you to plot more images at the same time. Input a 0 to plot all the images 
+normalization <- peakM$normalizations$TIC  # Input here a vector with the normalization values. Input NA for no normalization.
 save <- F                 # Choose if you want to save the plots into a pdf file (T/F)
 fileN <- "plotsRAW.pdf"   # Choose the name of the pdf file. If a file has the same name it will be overwritten
 
@@ -115,9 +113,9 @@ initialPlotter(peakM, matrixList, mz2plot,img2plot, groupsImg, normalization, sa
 
 Data normalization is a key step to remove part of the systematical error so the data represents more the biological variation
   There are several ways to normalize the data:
-     TIC (Total Ion Count): TIC divides every pixel by it's mean 
-     AcqTic (Acquired TIC):
-     RMS (Root Mean Squares):
+     TIC (Total Ion Count): TIC divides every pixel by the mean of all mass intesities of the raw data.
+     AcqTic (Acquired TIC): Acquired TIC calculates the TIC of each pixel and then calculates a mean with the surrounding TICs.
+     RMS (Root Mean Squares): RMS divides each pixel by the root mean square of all mass intensities. 
 
 
 ### Medium Spectrum from raw data
@@ -131,12 +129,12 @@ medSpec <- medSpecRaw(wDir)
 
 ```{r message=FALSE, warning=FALSE}
 # Here we plot the average spectrums we want to compare
-avSpecimg2plot <- c(1,3,6)  # Select the images you want to compare. Writing c(1,2,3) allows you to plot more than 
+avSpecimg2plot <- c(1)      # Select the images you want to compare. Writing c(1,2,3) allows you to plot more than 
                             # one image at the same time
 
 library(ggplot2)
 library(plotly)
-medSpecRawplot(wDir, medSpec , avSpecimg2plot)
+medSpecRawplot(medSpec , avSpecimg2plot)
 
 ```
 
@@ -153,7 +151,7 @@ normalization <- peakM$normalizations$TIC   # Choose between TIC/RMS/AcqTic norm
 save1 <- F                  # Choose if you want to save the plots into a pdf file (T/F)
 fileName1 <- ".pdf"         # Choose the name of the pdf file. If a file has the same name it will be overwritten
 
-medSpecComp(peakM, dataMat ,pixels2compare, pixels2compare2 , normalization, name1, name2, save1, fileName1)
+medSpecComp(peakM, pixels2compare, pixels2compare2, normalization, name1, name2, save1, fileName1)
 
 
 ```
@@ -201,7 +199,7 @@ pcaPlotImg(peakM, matrixList, pcaD, img2plotPca, groupsImg, pc2plot, save3, file
 norm4 <- peakM$normalizations$TIC   # Normalization applied to the data
 numClusters <- 4                    # Number of cluster to make the k-means
 
-kmeansData <- kmeansCluster(peakM, data2clus, norm4, numClusters)
+kmeansData <- kmeansCluster(peakM, norm4, numClusters)
 
 ```
 
@@ -217,13 +215,4 @@ clusterDataPlotting(peakM, matrixList, img2plot, groupsImg, kmeansData, save3, f
 
 
 ```
-
-
-
-
-
-
-
-
-
 
