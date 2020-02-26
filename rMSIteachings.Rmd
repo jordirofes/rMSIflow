@@ -19,8 +19,8 @@ rMSI::OpenMSI()
 ### rMSIproc
 ```{r}
 # This function opens the rMSIproc user interface.
-# rMSIproc allows you to input multiple rMSI images to process them (peak peaking, binning, aligning, baseline correction # and calibration) and outputs a compressed file with the peak matrix with the intensities of each mass bin for every    
-# pixel on the image  
+# rMSIproc allows you to input multiple rMSI images to process them (peak peaking, binning, aligning, baseline correction, smoothing and calibration) and outputs a compressed file with the peak matrix
+# Important: for this tutorial be sure all your images are processed at the same time and have the merge peak matrix option checked.
 rMSIproc::ProcessWizard()
 
 ```
@@ -29,7 +29,7 @@ rMSIproc::ProcessWizard()
 
 ```{r message=FALSE, warning=FALSE}
 
-# Insert where your data is located (The peak matrix and the .tar images)
+# Insert here where your data is located (The peak matrix and the .tar images)
 wDir <- "C:/Users/jordi/Desktop/Metabolomica/Projecte MALDI/CollCap/"
 # Insert here where your the document initialPlotter.R is located
 dir2 <- "C:/Users/jordi/Documents/GitHub/rMSIteachings/"
@@ -58,6 +58,7 @@ matrixList <- sepMatrix(peakM)
 peakM$names 
 ```
 
+
 ### Order changing
 
 ```{r}
@@ -79,7 +80,8 @@ peakM <- rMSIproc::MergePeakMatrices(matrixList)
 peakM$names # This allows you to see the order of the images on the peak matrix
 
 # Insert the group for each image (control, control, problem, ...) in the order they are on the peak matrix
-# Note # If you input NA. Each group will have the name in peakM$names
+# If you input NA. Each group will have the name in peakM$names
+# If you want multiple images to have the same group you can simply write the group name twice
 groupsImg <- c("Tumor1", "Tumor2", "Healthy1", "Healthy2", "Transition1", "Transition2")
 
 paste0(rep("Control",10),1:10) #If you have many images per experimental group you may want to use an expression like this
@@ -114,7 +116,7 @@ initialPlotter(peakM, matrixList, mz2plot,img2plot, groupsImg, normalization, sa
 Data normalization is a key step to remove part of the systematical error so the data represents more the biological variation
   There are several ways to normalize the data:
      TIC (Total Ion Count): TIC divides every pixel by the mean of all mass intesities of the raw data.
-     AcqTic (Acquired TIC): Acquired TIC calculates the TIC of each pixel and then calculates a mean with the surrounding TICs.
+     AcqTic (Acquired TIC): Acquired TIC calculates the TIC of each pixel and then calculates a mean with the surrounding TICs. 
      RMS (Root Mean Squares): RMS divides each pixel by the root mean square of all mass intensities. 
 
 
@@ -160,8 +162,7 @@ medSpecComp(peakM, pixels2compare, pixels2compare2, normalization, name1, name2,
 
 ```{r echo=FALSE, message=FALSE, warning=FALSE}
 centering<- T                 # The centering ensures the data is found within the 0/0 origin
-scaling  <- T                 # The scaling equalizes the data variance to decrease the bias from different data 
-                              # intensities
+scaling  <- T                 # The scaling equalizes the data variance to decrease the bias given the natural difference of 
 normalization <- peakM$normalizations$TIC  # Choose between TIC/RMS/AcqTic normalizarions. Leave it NA for no normalization
 
 pcaD <-pca(peakM, centering, scaling, normalization)
