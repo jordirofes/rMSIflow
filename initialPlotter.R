@@ -78,7 +78,7 @@ pca2dimPlot <- function(peakMatrix, pca, grpImg, pc1, pc2, sv2, fileN2) {
   dataPca <- as.data.frame(pcaData)
   colnames(dataPca) <- c("PC1", "PC2", "Groups")
   rownames(dataPca) <- c(1:length(dataPca$PC1))
-  sdev <- round(pca$sdev/sum(pca$sdev)*100, 4)
+  sdev <- round(pca$sdev/sum(pca$sdev)*100)
   
   plotPca <- ggplot(dataPca,aes(x = PC1, y = PC2, colour = Groups))+ geom_point(alpha = 0.5)+ stat_ellipse() + 
     xlab(paste0("PC", pc2plot1 ,"(", sdev[pc2plot1],"%)")) + ylab(paste0("PC",pc2plot2, "(", sdev[pc2plot2],"%)")) + 
@@ -118,6 +118,28 @@ pcaPlotImg <- function(peakMatrix, matrixLst, pca, img ,grpImg, pc, sv, fileN){
   
 }
 
+pcChooseNum <- function(pca, perc = 0.9){
+  pca$sdev
+  
+  pcVar <- sapply(pca$sdev, function(dev){
+    dev/sum(pca$sdev)*100
+  })
+  
+  cum <- sapply(1:length(pca$sdev), function(x){sum(pca$sdev[1:x])})/sum(pca$sdev)*100
+  
+  pcplotData <- data.frame(Cumulative = cum, PC = 1:length(pca$sdev))
+  bound <- which.min(abs(cum-perc*100))
+  
+  
+  plot <- ggplotly(ggplot(pcplotData) + geom_line(aes(x = PC, y = Cumulative)) + geom_point(aes(x = PC, y = Cumulative)) + theme_minimal() +
+                     ylab("Cummulative %") + xlab("Principal Component") + geom_segment(aes(x = bound, y = 0, xend = bound, yend = cum[bound]), linetype = "dashed") +
+                     geom_segment(aes(x = 0, y = cum[bound], xend = bound, yend = cum[bound]), linetype = "dashed"))
+  
+  # plot <- ggplotly(ggplot(pcplotData) + geom_line(aes(x = PC, y = Std)) + geom_point(aes(x = PC, y = Std)) + theme_minimal() +
+  #                      ylab("Explained %") + xlab("Principal Component") + geom_segment(aes(x = bound, y = 0, xend = bound, yend = Std[bound] )))
+  return(plot)
+}
+
 ### These functions plot the Average Raw Spectrum of selected images in an interactive way
 
 medSpecRaw <- function(directory){
@@ -154,7 +176,7 @@ parsed <- do.call(rbind, parsed)
 
 medSpecP <- function(peakMatrix, pixels, norm = NA){
   data <- peakMatrix$intensity
-  if(!is.na(normalization)){
+  if(!is.na(norm)){
     data <- data/norm
   }
   pixelMatrix <- peakMatrix$intensity[pixels,]
@@ -200,16 +222,16 @@ kmeansCluster <- function(peakMatrix, norm, numCl){
       clData[[i]] <- kmeans(clusData[limitDown:limitUp, ], numCl)
     
   }
-  clusImages <- lapply(clData, function(x){
-    return(x[1]) 
-  })
-  
-  return(clusImages)
+  return(clData)
   
 }
 
 clusterDataPlotting <- function(peakMatrix, matrixL, img, groups, clusterData, sv, file){
-  if(img == 0){
+  
+  clusterData <- lapply(clusterData, function(x){
+    return(x[1]) 
+  })
+   if(img == 0){
     allClusImages <- unlist(clusterData)
     kplot <- rMSIproc::plotClusterImageG(peakMatrix, allClusImages)
     if(sv == T){svPlot(file, kplot)}
@@ -232,3 +254,31 @@ clusterDataPlotting <- function(peakMatrix, matrixL, img, groups, clusterData, s
   
 }
 
+clusterKmeansComparison <- function(peakMatrix, norm, img, groups, cluster, clusterData, sv, file){
+
+  if(is.na(groups)){               # Assigning groups to image names if vector class equals NA
+    groups <- peakMatrix$names 
+  }
+  clusterData <- lapply(clusterData, function(x){   # Getting the clusterization from the k-means data
+    return(x[1]) 
+  })
+clusterData <- unlist(clusterData)
+
+clusSpec <- lapply(img, function(x){          # We calculate the medium spectra from chosen images and chosen clusters
+   
+    limitDown <- sum(peakMatrix$numPixels[1:(x-1)])+1
+    limitUp <- sum(peakMatrix$numPixels[1:x])
+    if(x == 1){limitDown <- 1}
+    int <- limitDown:limitUp
+    
+  lapply(cluster,function(y){
+    data.frame(Spectra = medSpecP(peakM, which(clusterData[int] == y), norm), mz = peakM$mass, Image = groups[x], Cluster = y)
+    })
+  })  
+clusSpec <- unlist(clusSpec, recursive = F)
+clusSpec <- do.call(rbind, clusSpec)
+plot1 <- ggplotly(ggplot(clusSpec) + geom_segment(aes(x = mz, xend = mz, y = 0, yend = Spectra, colour = paste(Image, "Cluster", Cluster))) + 
+  theme_minimal() + theme(legend.title = element_blank()) + ylab("Intensity") + xlab("M/Z"))
+
+return(plot1)
+}

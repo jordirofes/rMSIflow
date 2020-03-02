@@ -6,17 +6,35 @@ output: html_document
 ---
 
 ### Introduction
-rMSI and rMSIproc are R packages that allow the visualization of MALDIims data (rMSI) and the data processing from all the pixel spectrums to a peak matrix (rMSIproc). This tutorial wants to provide a standardized workflow for scientists analyzing different rMSIproc peak matrixs obtained from different images. This tutorial will explain how to: explore the peak matrix to visualize the different m/z intensities on the images, what normalization steps should be utilized when comparing different peak matrix, how to visualize the medium spectrum of the raw data, the application of multidimensional reduction methods (PCA), the utilization of clustering methods like Kmeans and SOM to find clusters of similar spectrums that can be related to differences between different tissue zones and the visualization and comparison of those clusters.
+rMSI and rMSIproc are R packages that allow the visualization of MALDIims data (rMSI) and the data processing 
+from all the pixel spectra to a peak matrix (rMSIproc). This tutorial wants to provide a standardized workflow
+for scientists analyzing different rMSIproc peak matrixs obtained from different images. This tutorial will explain 
+how to: explore the peak matrix to visualize the different m/z intensities on the images, what normalization steps 
+should be utilized when making comparisons, how to visualize the medium spectrum of the raw data, the application of multidimensional reduction methods (PCA), the utilization of clustering methods like Kmeans and SOM to find clusters 
+of similar spectrums that can be related to differences between different tissue zones and the visualization and
+comparison of those clusters.
 
 ### Required Packages
-For this tutorial you will need to install [rMSI](https://github.com/prafols/rMSI), [rMSIproc](https://github.com/prafols/rMSIproc), [ggplot2](https://github.com/tidyverse/ggplot2), [plotly](https://github.com/plotly/dashR) packages if you don't have them.
+For this tutorial you will need to install [rMSI](https://github.com/prafols/rMSI),
+[rMSIproc](https://github.com/prafols/rMSIproc), [ggplot2](https://github.com/tidyverse/ggplot2),
+[plotly](https://github.com/plotly/dashR) packages if you don't have them.
 
 ### rMSI
+
+rMSI is a package that allows you to visualize mass spectometry imaging (MSI) images in an interactive. rMSi also allows to visualize and get the spectra of selected pixels and download them as CSV.  
 ```{r}
 # This function opens the rMSI user interface that allows you to visualize a chosen image
 rMSI::OpenMSI()
 ```
 ### rMSIproc
+
+rMSiproc is a package that allows users to process MSI images by using the implemented user interface. The processing is followed by different steps: 
+- Smoothing of the spectra
+- Alignement of the spectra
+- Mass calibration with known mass peaks: if checked this will require you to input a CSV with the known m/z, then an interface will allow you to asign these masses to the peak on the spectra and finally rMSI will move the m/z axis so that the chosen peak/s have the known m/z
+- Peak peaking: peak peaking fins the peaks on the spectra and centroids them
+- Mass binning: mass binning agroups different peaks on the same m/z so that all images have the same number of m/z.
+After finishing rMSIproc will output a rMSIproc object with the peak matrix and some image information. 
 ```{r}
 # This function opens the rMSIproc user interface.
 # rMSIproc allows you to input multiple rMSI images to process them (peak peaking, binning, aligning, baseline correction, smoothing and calibration) and outputs a compressed file with the peak matrix
@@ -25,13 +43,14 @@ rMSIproc::ProcessWizard()
 
 ```
 
-### Preparations
+### First Steps
 
+Before we begin working with the peak matrix we will need to tell R where all the files are located on your system. You will have to input the adress of your peak matrix, the name of your peak matrix and the location of the file initialPlotter.R
 ```{r message=FALSE, warning=FALSE}
 
 # Insert here where your data is located (The peak matrix and the .tar images)
 wDir <- "C:/Users/jordi/Desktop/Metabolomica/Projecte MALDI/CollCap/"
-# Insert here where your the document initialPlotter.R is located
+# Insert here where the file initialPlotter.R is located
 dir2 <- "C:/Users/jordi/Documents/GitHub/rMSIteachings/"
 # Insert the name of the peak matrix .zip
 peakData <- "mergeddata-peaks.zip"
@@ -46,7 +65,9 @@ library(plotly)
 
 ### Extracting the Peak Matrix
 
-```{r results = "hide", echo = "false"}
+Now we can use the rMSIproc function LoadPeakMatrix to load the peak matrix into a variable.
+This will create a rMSIproc object called peakM which will contain the peak matrix and useful information of the images (pixel position, names, SNR and area) 
+```{r message=FALSE, warning=FALSE}
 
 # Here we extract the Peak Matrix from the .zip and create and object with all the data assigned to peakM
 peakM <- rMSIproc::LoadPeakMatrix(file.path(wDir, peakData))
@@ -58,22 +79,60 @@ matrixList <- sepMatrix(peakM)
 peakM$names 
 ```
 
+### Normalizations
+Before we visualize the data it's important to understand the methods of normalization you can use to normalize the data. 
+In MSI the normalization step required is case-dependant but here we will explain all the normalization methods included on rMSIproc
+processing. These normalization are included in the peak matrix object more exactly at peakM$normalizations and there is a
+normalization value for each pixel on the image.
 
-### Order changing
+Data normalization is a key step to remove part of the systematical error so the data represents more the biological variation
+  There are several ways to normalize the data:
+     - TIC (Total Ion Count): TIC divides every pixel by the mean of all mass intesities of the raw data.
+     - AcqTic (Acquired TIC): Acquired TIC calculates the TIC of each pixel and then calculates a mean with the surrounding TICs. 
+     - RMS (Root Mean Squares): RMS divides each pixel by the root mean square of all mass intensities. 
+     - Max: this method divides every pixel by the intensity it's most intense peak 
 
-```{r}
-# If you are not happy with the order of the images showed on peakM$names you can change it's order by entering here a  
-# vector with the desired order of images. This will update the peakM object with the new order
+### Exploring the peak matrix
 
-newOrder <- c(1,2,5,6,3,4) # Insert here the new desired order and run the code chunk. It will require some time to finish
+Now that we've seen the normalization methods we can proceed to the visualization of the data. This chunk below allows users to plot m/z intensities of each pixel onto a heatmap with the for of the tissue. You can also choose the images to be plotted by using vectors c(1:6), the normalization parameter can be changed by giving a vector with the normalization values for each pixel (peakM$normalizations includes the normalizations rMSI proc calculated) and you can choose to save plot by changing the save parameter to T.     
+```{r echo=FALSE, warning=FALSE}
 
-matrixList <- matrixList[newOrder]
-peakM <- rMSIproc::MergePeakMatrices(matrixList)
+# Select m/z to plot and image number out of peakM$names to plot
+peakM$names
+mz2plot <- 100            # You can find all the mz in your data using peakM$mass
+img2plot <- c(1)          # Writing a vector c() allows you to plot more images at the same time. Input a 0 to plot all the images 
+normalization <- peakM$normalizations$TIC  # Input here a vector with the normalization values. Input NA for no normalization.
+save <- F                 # Choose if you want to save the plots into a pdf file (T/F)
+fileN <- "plotsRAW.pdf"   # Choose the name of the pdf file. If a file has the same name it will be overwritten
+
+
+initialPlotter(peakM, matrixList, mz2plot,img2plot, groupsImg, normalization, save, fileN)
 ```
 
+### Medium Spectrum from raw data
 
-###  Assigning groups
+For more information we can visualize the raw data by using rMSI functions to calculate de medium spectra of each image in profile format. The medium spectrum is the spectrum that contains the mean of each m/z. The next first chunk will calculate the medium spectra from all images and the second one allows users to compare them.
+```{r}
+# We can use rMSI functions to plot the average spectra of an image to explore the raw data
+# Make sure that the .tar of the images is on the same directory you are working on
+medSpec <- medSpecRaw(wDir)
 
+```
+
+```{r message=FALSE, warning=FALSE}
+# Here we plot the average spectrums we want to compare
+avSpecimg2plot <- c(1:6)      # Select the images you want to compare. Writing c(1,2,3) allows you to plot more than 
+                            # one image at the same time
+
+library(ggplot2)
+library(plotly)
+medSpecRawplot(medSpec , avSpecimg2plot)
+
+```
+
+###  Class vector
+
+Before we begin analyzing the data we will need to input a class vector. The class vector is a vector c() that contains the different experimental groups where the images belong. This vector can be useful when visualizing the images to be able to compare the different experimental groups. 
 ```{r}
 # To allow classification of the images in different groups you will need to insert the names of each group in the vector groupsImg in the order they are on the peak matrix
 
@@ -93,54 +152,22 @@ if(length(groupsImg) != length(peakM$names)){
 
 ```
 
-### Exploring the peak matrix
+### Order changing
 
-```{r echo=FALSE, warning=FALSE}
-
-# Select m/z to plot and image number out of peakM$names to plot
-peakM$names
-mz2plot <- 100            # You can find all the mz in your data using peakM$mass
-img2plot <- c(2,3)        # Writing a vector c() allows you to plot more images at the same time. Input a 0 to plot all the images 
-normalization <- peakM$normalizations$TIC  # Input here a vector with the normalization values. Input NA for no normalization.
-save <- F                 # Choose if you want to save the plots into a pdf file (T/F)
-fileN <- "plotsRAW.pdf"   # Choose the name of the pdf file. If a file has the same name it will be overwritten
-
-
-initialPlotter(peakM, matrixList, mz2plot,img2plot, groupsImg, normalization, save, fileN)
-
-
-```
-
-### Normalizations
-
-Data normalization is a key step to remove part of the systematical error so the data represents more the biological variation
-  There are several ways to normalize the data:
-     TIC (Total Ion Count): TIC divides every pixel by the mean of all mass intesities of the raw data.
-     AcqTic (Acquired TIC): Acquired TIC calculates the TIC of each pixel and then calculates a mean with the surrounding TICs. 
-     RMS (Root Mean Squares): RMS divides each pixel by the root mean square of all mass intensities. 
-
-
-### Medium Spectrum from raw data
-
+This next chunk is only useful if you want to change the order of the images on the peak matrix. It can be skipped if your images are already on the order you want.
 ```{r}
-# We can use rMSI functions to plot the average spectra of an image to explore the raw data
-# Make sure that the .tar of the images is on the same directory you are working on
-medSpec <- medSpecRaw(wDir)
+# If you are not happy with the order of the images showed on peakM$names you can change it's order by entering here a  
+# vector with the desired order of images. This will update the peakM object with the new order
 
-```
+newOrder <- c(1,2,5,6,3,4) # Insert here the new desired order and run the code chunk. It will require some time to finish
 
-```{r message=FALSE, warning=FALSE}
-# Here we plot the average spectrums we want to compare
-avSpecimg2plot <- c(1)      # Select the images you want to compare. Writing c(1,2,3) allows you to plot more than 
-                            # one image at the same time
-
-library(ggplot2)
-library(plotly)
-medSpecRawplot(medSpec , avSpecimg2plot)
-
+matrixList <- matrixList[newOrder]
+peakM <- rMSIproc::MergePeakMatrices(matrixList)
 ```
 
 ### Medium spectrum from peak matrix from selected pixels
+
+
 ```{r}
 # This function makes the medium spectrum from selectec pixels from the peak matrix
 
@@ -163,7 +190,7 @@ medSpecComp(peakM, pixels2compare, pixels2compare2, normalization, name1, name2,
 ```{r echo=FALSE, message=FALSE, warning=FALSE}
 centering<- T                 # The centering ensures the data is found within the 0/0 origin
 scaling  <- T                 # The scaling equalizes the data variance to decrease the bias given the natural difference of 
-normalization <- peakM$normalizations$TIC  # Choose between TIC/RMS/AcqTic normalizarions. Leave it NA for no normalization
+normalization <- NA  # Choose between TIC/RMS/AcqTic normalizarions. Leave it NA for no normalization
 
 pcaD <-pca(peakM, centering, scaling, normalization)
 
@@ -185,7 +212,7 @@ plotly::ggplotly(pca2dimPlot(peakM, pcaD, groupsImg, pc2plot1,pc2plot2, save2, f
 
 ```{r message=FALSE, warning=FALSE}
 pc2plot <- 1             # Select which PC to plot into the images
-img2plotPca <- 0         # Select which images to plot. Using c() allows you to plot more images at the same time. 
+img2plotPca <- 1:6         # Select which images to plot. Using c() allows you to plot more images at the same time. 
 save3 <- F               # Save the plot into a pdf file (T/F)
 fileNpca3 <- "PCimg.pdf" # Name of the .pdf file
 
@@ -208,12 +235,24 @@ kmeansData <- kmeansCluster(peakM, norm4, numClusters)
 ### K-means segmentation plots
 
 ```{r}
-img2plot = c(1,3)   # Images you want to ploy. 
-save3 = F           # Save the plot into a pdf file (T/F)   
-fileName3 = ".pdf"  # Name of the .pdf file
+img2plot <- c(1,3)   # Images you want to ploy. 
+save3 <- F           # Save the plot into a pdf file (T/F)   
+fileName3 <- ".pdf"  # Name of the .pdf file
 
 clusterDataPlotting(peakM, matrixList, img2plot, groupsImg, kmeansData, save3, fileName3)
 
 
 ```
 
+###K-mean cluster comparison
+
+```{r}
+img2plot <- c(1,2)
+clus2comp <- c(1)
+norm <- peakM$normalizations$TIC
+
+clusterKmeansComparison(peakM, norm, img2plot, groupsImg, clus2comp, kmeansData, save, fileName)
+
+
+
+```
