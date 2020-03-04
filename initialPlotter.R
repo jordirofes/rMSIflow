@@ -118,14 +118,13 @@ pcaPlotImg <- function(peakMatrix, matrixLst, pcaJr, img ,grpImg, pc, sv, fileN)
   
 }
 
-pcChooseNum <- function(pca, perc = 0.9){
-  pca$sdev
+pcChooseNum <- function(pcaJr, perc = 0.9){
   
-  pcVar <- sapply(pca$sdev, function(dev){
-    dev/sum(pca$sdev)*100
+  pcVar <- sapply(pcaJr$sdev, function(dev){
+    dev/sum(pcaJr$sdev)*100
   })
   
-  cumulative <- sapply(1:length(pca$sdev), function(x){sum(pca$sdev[1:x])})/sum(pca$sdev)*100
+  cumulative <- sapply(1:length(pcaJr$sdev), function(x){sum(pcaJr$sdev[1:x])})/sum(pca$sdev)*100
   
   pcplotData <- data.frame(Cumulative = cumulative, PC = 1:length(pca$sdev))
   bound <- which.min(abs(cumulative-perc*100))
