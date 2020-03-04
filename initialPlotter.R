@@ -19,16 +19,16 @@ sepMatrix <- function(peakMatrix){
 
 initialPlotter <- function(peakMatrix, matrixL, mz, img, groups, norm, sv, file){
   a <- vector("list", length(img))
-  if(is.na(groups)){
-    groups <-  peakMatrix$names
-    }
+  # if(is.na(groups)){
+  #   groups <-  peakMatrix$names
+  #   }
   if (img == 0){
-      a <- rMSIproc::plotPeakImageG(peakMatrix, mz, plot_labels = groups, normalization = norm)
+      a <- rMSIproc::plotPeakImageG(peakMatrix, mz, normalization = norm)
       if(sv == T){svPlot(file, a)}
       return(a)
   } else{
     for (j in (1:length(img))){
-      a[[j]] <- rMSIproc::plotPeakImageG(matrixL[[img[j]]], mz, plot_labels = groups[img[j]], normalization = norm)
+      a[[j]] <- rMSIproc::plotPeakImageG(matrixL[[img[j]]], mz, normalization = norm)
     }
   }
   pl <- lapply(1:length(img2plot), function(i){
@@ -49,7 +49,7 @@ svPlot <- function(flName, plots2save){
 
 ### This function makes a PCA from the peak matrix
 
-pca <- function(peakMatrix, cnt, scl, norm = NA){
+pcaJr <- function(peakMatrix, cnt = T, scl = T, norm = NA){
   dataPca <- peakMatrix$intensity
   if(!is.na(norm)){
     dataPca <- dataPca/norm
@@ -92,12 +92,12 @@ pca2dimPlot <- function(peakMatrix, pca, grpImg, pc1, pc2, sv2, fileN2) {
 
 ### This function plots a chosen principal component into selected images
 
-pcaPlotImg <- function(peakMatrix, matrixLst, pca, img ,grpImg, pc, sv, fileN){
+pcaPlotImg <- function(peakMatrix, matrixLst, pcaJr, img ,grpImg, pc, sv, fileN){
   a <- vector("list", length(img))
   if(is.na(grpImg)){ grpImg <- peakMatrix$names}
   
   if (img == 0){
-    a <- rMSIproc::plotValuesImageG(peakMatrix, pixel_values = pca$x[,pc], plot_labels =  grpImg)
+    a <- rMSIproc::plotValuesImageG(peakMatrix, pixel_values = pcaJr$x[,pc], plot_labels =  grpImg)
       if(sv == T){svPlot(fileN, a)}
     return(a)
   } else{
@@ -107,7 +107,7 @@ pcaPlotImg <- function(peakMatrix, matrixLst, pca, img ,grpImg, pc, sv, fileN){
       limitUp <- sum(peakMatrix$numPixels[1:img[j]])
       if(img[j] == 1){limitDown <- 1}
       int <- limitDown:limitUp
-      a[[j]] <- rMSIproc::plotValuesImageG(matrixLst[[img[j]]], pixel_values = pca$x[int,pc] , plot_labels = grpImg[img[j]])
+      a[[j]] <- rMSIproc::plotValuesImageG(matrixLst[[img[j]]], pixel_values = pcaJr$x[int,pc] , plot_labels = grpImg[img[j]])
     }
   }
   pl <- lapply(1:length(img), function(i){
