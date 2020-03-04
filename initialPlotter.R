@@ -125,15 +125,15 @@ pcChooseNum <- function(pca, perc = 0.9){
     dev/sum(pca$sdev)*100
   })
   
-  cum <- sapply(1:length(pca$sdev), function(x){sum(pca$sdev[1:x])})/sum(pca$sdev)*100
+  cumulative <- sapply(1:length(pca$sdev), function(x){sum(pca$sdev[1:x])})/sum(pca$sdev)*100
   
-  pcplotData <- data.frame(Cumulative = cum, PC = 1:length(pca$sdev))
-  bound <- which.min(abs(cum-perc*100))
+  pcplotData <- data.frame(Cumulative = cumulative, PC = 1:length(pca$sdev))
+  bound <- which.min(abs(cumulative-perc*100))
   
   
   plot <- ggplotly(ggplot(pcplotData) + geom_line(aes(x = PC, y = Cumulative)) + geom_point(aes(x = PC, y = Cumulative)) + theme_minimal() +
-                     ylab("Cummulative %") + xlab("Principal Component") + geom_segment(aes(x = bound, y = 0, xend = bound, yend = cum[bound]), linetype = "dashed") +
-                     geom_segment(aes(x = 0, y = cum[bound], xend = bound, yend = cum[bound]), linetype = "dashed"))
+                     ylab("Cummulative %") + xlab("Principal Component") + geom_segment(aes(x = bound, y = 0, xend = bound, yend = cumulative[bound]), linetype = "dashed") +
+                     geom_segment(aes(x = 0, y = cumulative[bound], xend = bound, yend = cumulative[bound]), linetype = "dashed"))
   
   # plot <- ggplotly(ggplot(pcplotData) + geom_line(aes(x = PC, y = Std)) + geom_point(aes(x = PC, y = Std)) + theme_minimal() +
   #                      ylab("Explained %") + xlab("Principal Component") + geom_segment(aes(x = bound, y = 0, xend = bound, yend = Std[bound] )))
