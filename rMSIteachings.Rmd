@@ -103,7 +103,7 @@ c(1:6), the normalization parameter can be changed by giving a vector with the n
 # Select m/z to plot and image number out of peakM$names to plot
 peakM$names
 mz2plot <- 100            # You can find all the mz in your data using peakM$mass
-img2plot <- 1:2          # Writing a vector c() allows you to plot more images at the same time. Input a 0 to plot all the images 
+img2plot <- 1:2           # Writing a vector c() allows you to plot more images at the same time. Input a 0 to plot all the images 
 normalization <- peakM$normalizations$TIC  # Input here a vector with the normalization values. Input NA for no normalization.
 savePlot <- F                 # Choose if you want to save the plots into a pdf file (T/F)
 fileN <- "plotsRAW.pdf"   # Choose the name of the pdf file. If a file has the same name it will be overwritten
@@ -184,8 +184,8 @@ pixels2compare2 <- c(51:100)# Input the second set of pixels that are going to b
                             
 name1 <- "Cortex"           # Insert a tag for the first set of pixels
 name2 <- "Medula"           # Insert a tag for the second set of pixels
-normalization <- peakM$normalizations$TIC   # Choose between TIC/RMS/AcqTic normalizations. Leave it NA for no normalization
-savePlot <- F                  # Choose if you want to save the plots into a pdf file (T/F)
+normalization <- peakM$normalizations$TIC    # Input here a vector with the normalization values. Input NA for no normalization.
+savePlot <- F               # Choose if you want to save the plots into a pdf file (T/F)
 fileName1 <- ".pdf"         # Choose the name of the pdf file. If a file has the same name it will be overwritten
 
 medSpecComp(peakM, pixels2compare, pixels2compare2, normalization, name1, name2, save1, fileName1)
@@ -200,9 +200,9 @@ rotating the axis so that the variance between the variables is maximized. This 
 (PC1). Then the perpendicular axis from PC1 is calculated and the variables are again computed, this will correspond the second
 principal component (PC2). This can be done multiple times, so that we can calculate any amount of PCs we want.
 ```{r echo=FALSE, message=FALSE, warning=FALSE}
-centeringJ <- T                 # The centering ensures the data is found within the 0/0 origin
-scalingJ  <- T                 # The scaling equalizes the data variance to decrease the bias given the natural difference of 
-normalization <- NA  # Choose between TIC/RMS/AcqTic normalizarions. Leave it NA for no normalization
+centeringJ <- T      # The centering ensures the data is found within the 0/0 origin
+scalingJ  <- T       # The scaling equalizes the data variance to decrease the bias given the natural difference in scale of the variables 
+normalization <- NA  # Input here a vector with the normalization values. Input NA for no normalization.
 
 pcaD <-pcaJr(peakM, centeringJ, scalingJ, normalization)
 
@@ -228,10 +228,11 @@ This chunk calculates the classic PC vs PC two dimensional graphic to visualize 
 ```{r}
 pc2plot1 <- 1  # Select which PC are going to be plotted in a two dimensional graphic
 pc2plot2 <- 2  # 
-savePlot <- T     # Select if you want to save the plot into a pdf file (T/F)
+savePlot <- T  # Select if you want to save the plot into a pdf file (T/F)
 fileNpca2 <- "PC1vsPC2.pdf" # Name of the .pdf file
 
-plotly::ggplotly(pca2dimPlot(peakM, pcaD, groupsImg, pc2plot1,pc2plot2, savePlot, fileNpca2))
+plotPca <- pca2dimPlot(peakM, pcaD, groupsImg, pc2plot1,pc2plot2, savePlot, fileNpca2)
+plotly::ggplotly(plotPca)
 
 ```
 
@@ -240,8 +241,8 @@ plotly::ggplotly(pca2dimPlot(peakM, pcaD, groupsImg, pc2plot1,pc2plot2, savePlot
 This chunk plots a chosen principal component onto the images.  
 ```{r message=FALSE, warning=FALSE}
 pc2plot <- 1             # Select which PC to plot into the images
-img2plotPca <- 1:2        # Select which images to plot. Using c() allows you to plot more images at the same time. 
-savePlot <- F               # Save the plot into a pdf file (T/F)
+img2plotPca <- c(1,3)    # Select which images to plot. Using c() allows you to plot more images at the same time. 
+savePlot <- F            # Save the plot into a pdf file (T/F)
 fileNpca3 <- "PCimg.pdf" # Name of the .pdf file
 
 pcaPlotImg(peakM, matrixList, pcaD, img2plotPca, groupsImg, pc2plot, savePlot, fileNpca3) 
@@ -277,8 +278,9 @@ WSS
 ```{r warning=FALSE}
 norm4 <- peakM$normalizations$TIC   # Normalization applied to the data
 numClusters <- 4                    # Number of cluster to make the k-means
-
-kmeansData <- kmeansCluster(peakM, norm4, numClusters)
+merged <- T                         # This variable allows you to choose between clustering all images together (T) or clustering them
+                                    # separately (F)
+kmeansData <- kmeansCluster(peakM, norm4, numClusters, merged)
 
 ```
 
@@ -287,11 +289,11 @@ kmeansData <- kmeansCluster(peakM, norm4, numClusters)
 
 This next chunk plots the cluster vector onto the images. This allows users to see which pixels correspond to each cluster.
 ```{r}
-img2plot <- c(1,4)   # Images you want to plot. 
-savePlot <- F           # Save the plot into a pdf file (T/F)   
-fileName3 <- ".pdf"  # Name of the .pdf file
+img2plot <- c(1,6,5)  # Images you want to plot. 
+savePlot <- F         # Save the plot into a pdf file (T/F)   
+fileName3 <- ".pdf"   # Name of the .pdf file
 
-clusterDataPlotting(peakM, matrixList, img2plot, groupsImg, kmeansData, savePlot, fileName3)
+ggplotly(clusterDataPlotting(peakM, matrixList, img2plot, groupsImg, kmeansData, savePlot, fileName3))
 
 
 ```
@@ -300,12 +302,14 @@ clusterDataPlotting(peakM, matrixList, img2plot, groupsImg, kmeansData, savePlot
 ### K-mean cluster comparison
 
 This chunk allows users to calculate the medium spectra of chosen clusters and images. This allows users to visualize the spectra
-differences of each cluster and image.
+differences of each cluster and image. 
+Remember that if the K-means is done with all the images at the same time (merge == T) there may be images that don't contain any pixel
+from one of the clusters. These clusters won't have a medium spectrum associated with the image.
 ```{r warning=FALSE}
-img2plot <- c(1, 4)
-clus2comp <- c(3:3)
-norm <- peakM$normalizations$TIC
+img2plot <- c(1:6)               # Choose the images you want to ploy
+clus2comp <- c(1:4)              # Choose the clusters you want to plot
+norm <- peakM$normalizations$TIC # Input here a vector with the normalization values. Input NA for no normalization.
 
-clusterKmeansComparison(peakM, norm, img2plot, groupsImg, clus2comp, kmeansData, savePlot, fileName)
+clusterKmeansComparison(peakM, norm, img2plot, groupsImg, clus2comp, kmeansData)
 
 ```

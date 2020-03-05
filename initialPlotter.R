@@ -38,7 +38,7 @@ initialPlotter <- function(peakMatrix, matrixL, mz, img, groups, norm, sv, file)
   return(subplot(pl))
 }
 
-### This function saves given plot on a pdf file
+### This function saves given plot on a pdf file  
 
 svPlot <- function(flName, plots2save){
   pdf(flName)
@@ -203,7 +203,7 @@ medSpecComp <- function(peakMat, pixels1, pixels2, normalization, name1, name2, 
   
 ### K-means
   
-kmeansCluster <- function(peakMatrix, norm, numCl){
+kmeansCluster <- function(peakMatrix, norm, numCl, together){
   clusData <- peakMatrix$intensity
   
   if(!is.na(norm)){
@@ -211,15 +211,18 @@ kmeansCluster <- function(peakMatrix, norm, numCl){
   }
   
   clData <- list()
-  
-  for (i in 1:length(peakMatrix$numPixels)){ 
+  if(together == F){
+  for (i in 1:length(peakMatrix$numPixels)){
     limitDown <- sum(peakMatrix$numPixels[1:(i-1)])+1
     limitUp <- sum(peakMatrix$numPixels[1:i])
     int <-limitDown:limitUp
-    if (i == 1){ limitDown <- 1}                                                 
-    
+    if (i == 1){ limitDown <- 1}
+
       clData[[i]] <- kmeans(clusData[limitDown:limitUp, ], numCl)
-    
+
+  }
+  } else{
+  clData[[1]] <- kmeans(clusData, numCl)
   }
   return(clData)
   
@@ -230,30 +233,35 @@ clusterDataPlotting <- function(peakMatrix, matrixL, img, groups, clusterData, s
   clusterData <- lapply(clusterData, function(x){
     return(x[1]) 
   })
+  allClusImages <- unlist(clusterData)
+  
+  int2plot <- lapply(img, function(y){
+    limitDown <- sum(peakMatrix$numPixels[1:(y-1)])+1
+    limitUp <- sum(peakMatrix$numPixels[1:y])
+    if(y == 1){limitDown <- 1}
+    int <- limitDown:limitUp
+  })
+  
    if(img == 0){
-    allClusImages <- unlist(clusterData)
     kplot <- rMSIproc::plotClusterImageG(peakMatrix, allClusImages)
     if(sv == T){svPlot(file, kplot)}
     return(kplot)
   } else{
-  
-    allClusImages <- unlist(clusterData, recursive = FALSE)
-  kplot <- lapply(img, function(x){
-      plots <- rMSIproc::plotClusterImageG(matrixL[[x]], allClusImages[[x]])
-      return(plots)
-  })
-  if(sv == T){svPlot(file, kplot)}
-  return(subplot(kplot))
-  kplot <- lapply(kplots, function(x){
-    plots <- ggplotly(kplots)
-    return(plots)
-  })
-  return(subplot(kplot))
+     
+     int2plot <- unlist(int2plot)
+     matrix2plot <- rMSIproc::`[.rMSIprocPeakMatrix`(peakMatrix, int2plot)
+     plot <- rMSIproc::plotClusterImageG(matrix2plot, allClusImages[int2plot])
+      return(plot)
   }
-  
-}
+  if(sv == T){svPlot(file, kplot)}
+  # kplot <- lapply(kplots, function(x){
+  #   plots <- ggplotly(kplots)
+  #   return(plots)
+  # })
+  # return(subplot(kplot))
+  }
 
-clusterKmeansComparison <- function(peakMatrix, norm, img, groups, cluster, clusterData, sv, file){
+clusterKmeansComparison <- function(peakMatrix, norm, img, groups, cluster, clusterData){
 
   if(is.na(groups)){               # Assigning groups to image names if vector class equals NA
     groups <- peakMatrix$names 
@@ -264,18 +272,17 @@ clusterKmeansComparison <- function(peakMatrix, norm, img, groups, cluster, clus
 clusterData <- unlist(clusterData)
 
 clusSpec <- lapply(img, function(x){          # We calculate the medium spectra from chosen images and chosen clusters
-   
     limitDown <- sum(peakMatrix$numPixels[1:(x-1)])+1
     limitUp <- sum(peakMatrix$numPixels[1:x])
     if(x == 1){limitDown <- 1}
     int <- limitDown:limitUp
-    
   lapply(cluster,function(y){
     data.frame(Spectra = medSpecP(peakM, which(clusterData[int] == y), norm), mz = peakM$mass, Image = groups[x], Cluster = y)
     })
   })  
 clusSpec <- unlist(clusSpec, recursive = F)
 clusSpec <- do.call(rbind, clusSpec)
+clusSpec <- clusSpec[which(!is.na(clusSpec$Spectra)),]
 plot1 <- ggplotly(ggplot(clusSpec) + geom_segment(aes(x = mz, xend = mz, y = 0, yend = Spectra, colour = paste(Image, "Cluster", Cluster))) + 
   theme_minimal() + theme(legend.title = element_blank()) + ylab("Intensity") + xlab("M/Z"))
 
