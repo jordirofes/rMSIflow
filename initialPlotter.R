@@ -55,13 +55,13 @@ pcaJr <- function(peakMatrix, cnt = T, scl = T, norm = NA){
     dataPca <- dataPca/norm
     }
      colnames(dataPca) <- peakMatrix$mass
-  pca <- prcomp(dataPca, center = cnt, scale. = scl) ### Fem la PCA de la matriu de pics
-  return(pca)
+  pcaJr <- prcomp(dataPca, center = cnt, scale. = scl) ### Fem la PCA de la matriu de pics
+  return(pcaJr)
 }
 
 ### This function creates a two dimensional plot with the especified principal components
 
-pca2dimPlot <- function(peakMatrix, pca, grpImg, pc1, pc2, sv2, fileN2) {
+pca2dimPlot <- function(peakMatrix, pcaJr, grpImg, pc1, pc2, sv2, fileN2) {
   if(!is.na(grpImg)){
   listGroups <- mapply(function(groups,i){
     rep(groups,  peakMatrix$numPixels[i])
@@ -72,13 +72,13 @@ pca2dimPlot <- function(peakMatrix, pca, grpImg, pc1, pc2, sv2, fileN2) {
   
   vectorGroups <- unlist(listGroups)
   pcaData <- list()
-  pcaData[[1]] <- pca$x[,pc1]
-  pcaData[[2]] <- pca$x[,pc2]
+  pcaData[[1]] <- pcaJr$x[,pc1]
+  pcaData[[2]] <- pcaJr$x[,pc2]
   pcaData[[3]] <- vectorGroups
   dataPca <- as.data.frame(pcaData)
   colnames(dataPca) <- c("PC1", "PC2", "Groups")
   rownames(dataPca) <- c(1:length(dataPca$PC1))
-  sdev <- round(pca$sdev/sum(pca$sdev)*100)
+  sdev <- round(pcaJr$sdev/sum(pcaJr$sdev)*100)
   
   plotPca <- ggplot(dataPca,aes(x = PC1, y = PC2, colour = Groups))+ geom_point(alpha = 0.5)+ stat_ellipse() + 
     xlab(paste0("PC", pc2plot1 ,"(", sdev[pc2plot1],"%)")) + ylab(paste0("PC",pc2plot2, "(", sdev[pc2plot2],"%)")) + 
@@ -124,9 +124,9 @@ pcChooseNum <- function(pcaJr, perc = 0.9){
     dev/sum(pcaJr$sdev)*100
   })
   
-  cumulative <- sapply(1:length(pcaJr$sdev), function(x){sum(pcaJr$sdev[1:x])})/sum(pca$sdev)*100
+  cumulative <- sapply(1:length(pcaJr$sdev), function(x){sum(pcaJr$sdev[1:x])})/sum(pcaJr$sdev)*100
   
-  pcplotData <- data.frame(Cumulative = cumulative, PC = 1:length(pca$sdev))
+  pcplotData <- data.frame(Cumulative = cumulative, PC = 1:length(pcaJr$sdev))
   bound <- which.min(abs(cumulative-perc*100))
   
   
