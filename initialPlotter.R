@@ -331,8 +331,8 @@ compareClusMedSpec <- function(refSpec, compSpec, peakMatrix, clusterData, norma
   foldChange <- means2comp[[2]]/means2comp[[1]]
   change <- which(foldChange < 1)
 
-
-  foldChange[change] <- means2comp[[1]][change]/means2comp[[2]][change]
+# 
+#   foldChange[change] <- means2comp[[1]][change]/means2comp[[2]][change]
   foldChange <- log2(foldChange)
   
   ###################################################################### Error estimation
@@ -367,7 +367,8 @@ compareClusMedSpec <- function(refSpec, compSpec, peakMatrix, clusterData, norma
 
 volcanoPlotJ <- function(data2plot){
   
-  volcPlot <-ggplot(data2plot[[1]]) + geom_point(aes(x = Log2FC, y = log10(pvalues))) + geom_vline(aes(xintercept = log2(2), linetype = "dashed")) +
-    geom_hline(aes(yintercept = log10(0.05), linetype = "dashed")) + scale_y_reverse()+ theme_minimal() + theme(legend.position = "none")
+  volcPlot <-ggplot(data2plot[[1]]) + geom_point(aes(x = Log2FC, y = log10(pvalues))) + geom_vline(aes(xintercept = log2(2), linetype = "1")) +
+    geom_hline(aes(yintercept = log10(0.05), linetype = "1")) + geom_vline(aes(xintercept = -log2(2), linetype = "1")) + 
+    scale_y_reverse()+ theme_minimal() + theme(legend.position = "none")
   return(volcPlot)
 }

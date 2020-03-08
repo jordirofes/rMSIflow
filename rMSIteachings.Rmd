@@ -337,7 +337,7 @@ sumDataComp <-compareClusMedSpec(c(refImg, refClus), c(compImg, compClus), peakM
 
 ### Volcano Plot
 
-This next chunk creates a volcano plot with x = log2(Fold Change) and y = -log10(p-values) and some lines marking the p-value = 0.05 and the Fold Change = 2.
+This next chunk creates a volcano plot with x = log2(Fold Change) and y = -log10(p-values) and some lines marking the p-value = log10(0.05) and the Fold Change = log2(2).
 ```{r}
 
 volcanoPlotJ(sumDataComp)
