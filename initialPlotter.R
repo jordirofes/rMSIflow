@@ -78,10 +78,11 @@ pca2dimPlot <- function(peakMatrix, pcaJr, grpImg, pc1, pc2, sv2, fileN2) {
   dataPca <- as.data.frame(pcaData)
   colnames(dataPca) <- c("PC1", "PC2", "Groups")
   rownames(dataPca) <- c(1:length(dataPca$PC1))
-  sdev <- round(pcaJr$sdev/sum(pcaJr$sdev)*100)
+  variance <- pcaJr$sdev^2
+  xvariance <- round(variance/sum(variance)*100, 1)
   
   plotPca <- ggplot(dataPca,aes(x = PC1, y = PC2, colour = Groups))+ geom_point(alpha = 0.5)+ stat_ellipse() + 
-    xlab(paste0("PC", pc2plot1 ,"(", sdev[pc2plot1],"%)")) + ylab(paste0("PC",pc2plot2, "(", sdev[pc2plot2],"%)")) + 
+    xlab(paste0("PC", pc1 ,"(", xvariance[pc1],"%)")) + ylab(paste0("PC",pc2, "(", xvariance[pc2],"%)")) + 
     theme_minimal() + geom_hline(yintercept = 0) + geom_vline(xintercept = 0) + 
     geom_point(aes(x= 0, y =0), color= "black") 
   if(sv2 == T){
@@ -120,11 +121,12 @@ pcaPlotImg <- function(peakMatrix, matrixLst, pcaJr, img ,grpImg, pc, sv, fileN)
 
 pcChooseNum <- function(pcaJr, perc = 0.9){
   
-  pcVar <- sapply(pcaJr$sdev, function(dev){
-    dev/sum(pcaJr$sdev)*100
+  variance <- pcaJr$sdev^2
+  pcVar <- sapply(variance, function(dev){
+    dev/sum(variance)*100
   })
   
-  cumulative <- sapply(1:length(pcaJr$sdev), function(x){sum(pcaJr$sdev[1:x])})/sum(pcaJr$sdev)*100
+  cumulative <- sapply(1:length(variance), function(x){sum(variance[1:x])})/sum(variance)*100
   
   pcplotData <- data.frame(Cumulative = cumulative, PC = 1:length(pcaJr$sdev))
   bound <- which.min(abs(cumulative-perc*100))
@@ -317,12 +319,14 @@ compareClusMedSpec <- function(refSpec, compSpec, peakMatrix, clusterData, norma
     test <- t.test(specs2comp[[1]][,com], specs2comp[[2]][,com])
     test$p.value
   })
-  pvalues <- p.adjust(pvalues, method = "fdr")
+  pvalues <- p.adjust(pvalues, method = "bonferroni")
+  
+  
+  
+  ###################################################################### Fold Change
   means2comp <- lapply(specs2comp, function(x){
     apply(x, 2, mean)
   })
-  
-  ###################################################################### Fold Change
   
   foldChange <- means2comp[[2]]/means2comp[[1]]
   change <- which(foldChange < 1)

@@ -202,7 +202,7 @@ principal component (PC2). This can be done multiple times, so that we can calcu
 ```{r echo=FALSE, message=FALSE, warning=FALSE}
 centeringJ <- T      # The centering ensures the data is found within the 0/0 origin
 scalingJ  <- T       # The scaling equalizes the data variance to decrease the bias given the natural difference in units of the variables 
-normalization <- NA  # Input here a vector with the normalization values. Input NA for no normalization.
+normalization <- peakM$normalizations$TIC  # Input here a vector with the normalization values. Input NA for no normalization.
 
 pcaD <-pcaJr(peakM, centeringJ, scalingJ, normalization)
 
