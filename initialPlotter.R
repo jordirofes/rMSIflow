@@ -174,19 +174,18 @@ parsed <- do.call(rbind, parsed)
 ### These functions plot the Average Spectrum of the peak matrix
 
 medSpecP <- function(peakMatrix, pixels, norm = NA){
-  data <- peakMatrix$intensity
-  if(!is.na(norm)){
-    data <- data/norm
+    datapm <- peakMatrix$intensity
+    if(!is.na(norm)){
+      datapm <- datapm/norm
+    }
+    pixelMatrix <- datapm[pixels,]
+    avgSpecpm <- apply(pixelMatrix, 2, mean)
+    return(avgSpecpm)
   }
-  pixelMatrix <- peakMatrix$intensity[pixels,]
-  avgSpecpm <- apply(pixelMatrix, 2, mean)
-                             
-  return(avgSpecpm)
-}
 
 medSpecComp <- function(peakMat, pixels1, pixels2, normalization, name1, name2, sav2, filename2){
-  medSpec1 <- medSpecP(peakMat, pixels1, normalization)
-  medSpec2 <- medSpecP(peakMat, pixels2, normalization)
+  medSpec1 <- medSpecP(peakMat, pixels1, normalization)$Mitjana
+  medSpec2 <- medSpecP(peakMat, pixels2, normalization)$Mitjana
   medSpecdf <- as.data.frame(cbind(medSpec1, medSpec2, peakM$mass))
   colnames(medSpecdf) <- c("Spec1", "Spec2", "Mass") 
   
@@ -203,8 +202,8 @@ medSpecComp <- function(peakMat, pixels1, pixels2, normalization, name1, name2, 
   
 ### K-means
   
-kmeansCluster <- function(peakMatrix, norm, numCl, together){
-  clusData <- peakMatrix$intensity
+kmeansCluster <- function(peakMatrix, intensities, norm, numCl, together){
+  clusData <- intensities
   
   if(!is.na(norm)){
     clusData <- clusData/norm
@@ -267,7 +266,7 @@ clusterKmeansComparison <- function(peakMatrix, norm, img, groups, cluster, clus
     groups <- peakMatrix$names 
   }
   clusterData <- lapply(clusterData, function(x){   # Getting the clusterization from the k-means data
-    return(x[1]) 
+    return(x[1])  
   })
 clusterData <- unlist(clusterData)
 
@@ -280,11 +279,91 @@ clusSpec <- lapply(img, function(x){          # We calculate the medium spectra 
     data.frame(Spectra = medSpecP(peakM, which(clusterData[int] == y), norm), mz = peakM$mass, Image = groups[x], Cluster = y)
     })
   })  
+
 clusSpec <- unlist(clusSpec, recursive = F)
 clusSpec <- do.call(rbind, clusSpec)
 clusSpec <- clusSpec[which(!is.na(clusSpec$Spectra)),]
+
 plot1 <- ggplotly(ggplot(clusSpec) + geom_segment(aes(x = mz, xend = mz, y = 0, yend = Spectra, colour = paste(Image, "Cluster", Cluster))) + 
   theme_minimal() + theme(legend.title = element_blank()) + ylab("Intensity") + xlab("M/Z"))
 
 return(plot1)
+}
+
+
+### Fold Change and P-values from medium spectrum
+
+compareClusMedSpec <- function(refSpec, compSpec, peakMatrix, clusterData, norma){
+  clusterData <- lapply(clusterData, function(x){   # Getting the clusterization from the k-means data
+    return(x[1])  
+  })
+  clusterData <- unlist(clusterData)
+  dt <- peakMatrix$intensity/norma
+  
+  ###################################################################### Mean Spectra
+  
+  specs2comp <- mapply(function(x, y){
+    limitDown <- sum(peakMatrix$numPixels[1:(x-1)])+1
+    limitUp <- sum(peakMatrix$numPixels[1:x])
+    if(x == 1){limitDown <- 1}
+    int <- limitDown:limitUp
+    Specs <- dt[which(clusterData[int] == y),]
+  
+  }, c(refSpec[1], compSpec[1]), c(refSpec[2], compSpec[2]), SIMPLIFY = F)
+
+  ###################################################################### P-Values
+  
+  pvalues <- sapply(1:length(peakMatrix$mass), function(com){
+    test <- t.test(specs2comp[[1]][,com], specs2comp[[2]][,com])
+    test$p.value
+  })
+  pvalues <- p.adjust(pvalues, method = "fdr")
+  means2comp <- lapply(specs2comp, function(x){
+    apply(x, 2, mean)
+  })
+  
+  ###################################################################### Fold Change
+  
+  foldChange <- means2comp[[2]]/means2comp[[1]]
+  change <- which(foldChange < 1)
+
+
+  foldChange[change] <- means2comp[[1]][change]/means2comp[[2]][change]
+  foldChange <- log2(foldChange)
+  
+  ###################################################################### Error estimation
+  
+  auTList <- c(196.966570, 393.933140, 590.899710, 787.866280, 984.832850)
+  
+  rmIndex <- sapply(auTList, function(tMass){
+    diffMatrix <- (abs(peakMatrix$mass - tMass))
+    index <- which.min(diffMatrix)
+    return(index) ## This will return the index of the masses where the gold peaks are based on the real mass                                                 ## with the minimum difference with the teorical mass
+  })
+  auMass <- peakMatrix$mass[rmIndex]
+  
+  error <- abs((auTList - auMass)/auTList*10^6)
+  
+  massError <- sapply(peakMatrix$mass, function(mass){
+    
+    error[which.min(abs(auMass - mass))]
+    
+  })
+  
+  
+  ###################################################################### Mounting the data-frame
+  
+  tag = paste("Image", compSpec[1] ,"Cluster",  compSpec[2],"Vs", "Image", refSpec[1], "Cluster", refSpec[2])
+  compData <- list()
+  compData[[1]] <- data.frame("mz" = peakMatrix$mass, "Log2FC" = foldChange, "pvalues" = pvalues, "ErrorEstimation" = massError)
+
+  names(compData) <- tag
+  return(compData)
+}
+
+volcanoPlotJ <- function(data2plot){
+  
+  volcPlot <-ggplot(data2plot[[1]]) + geom_point(aes(x = Log2FC, y = log10(pvalues))) + geom_vline(aes(xintercept = log2(2), linetype = "dashed")) +
+    geom_hline(aes(yintercept = log10(0.05), linetype = "dashed")) + scale_y_reverse()+ theme_minimal() + theme(legend.position = "none")
+  return(volcPlot)
 }

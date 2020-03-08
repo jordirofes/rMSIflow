@@ -1,15 +1,6 @@
 ### Finding gold peaks
 
-```{r}
-## This function searches the peak matrix for the intensities of the gold peaks with teorical mass auTList
-auTList <- c(196.966570, 393.933140, 590.899710, 787.866280, 984.832850)
 
-rmIndex <- sapply(auTList, function(tMass){
-  diffMatrix <- (abs(peakM$mass - tMass))
-  index <- which.min(diffMatrix)
-  return(index) ## This will return the masses where the gold peaks are based on the real mass                                                 ## with the minimum difference with the teorical mass
-})
-auMass <- peakM$mass[rmIndex]
 
 #########################
 
@@ -31,11 +22,7 @@ colnames(aupeakMatrix) <- aunames
 
 anotation <- rMSIproc::peakAnnotation(PeakMtx = peakM)
 
-```
-
 ### Calculating Au intensity quotients
-
-```{r}
 # Mean intensities by image
 meanImagePeakAu <- matrix(nrow = length(peakM$numPixels), ncol = length(auMass))
 
@@ -101,7 +88,6 @@ for(i in 1:length(peakM$numPixels)){
 
 apply(peakM$intensity, 1, max)
 
-```
 
 
 ## Not needed as the last version of rMSIproc contais a peakmatrix subsetting function

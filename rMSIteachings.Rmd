@@ -188,7 +188,7 @@ normalization <- peakM$normalizations$TIC    # Input here a vector with the norm
 savePlot <- F               # Choose if you want to save the plots into a pdf file (T/F)
 fileName1 <- ".pdf"         # Choose the name of the pdf file. If a file has the same name it will be overwritten
 
-medSpecComp(peakM, pixels2compare, pixels2compare2, normalization, name1, name2, save1, fileName1)
+medSpecComp(peakM, pixels2compare, pixels2compare2, normalization, name1, name2, savePlot, fileName1)
 
 
 ```
@@ -201,7 +201,7 @@ rotating the axis so that the variance between the variables is maximized. This 
 principal component (PC2). This can be done multiple times, so that we can calculate any amount of PCs we want.
 ```{r echo=FALSE, message=FALSE, warning=FALSE}
 centeringJ <- T      # The centering ensures the data is found within the 0/0 origin
-scalingJ  <- T       # The scaling equalizes the data variance to decrease the bias given the natural difference in scale of the variables 
+scalingJ  <- T       # The scaling equalizes the data variance to decrease the bias given the natural difference in units of the variables 
 normalization <- NA  # Input here a vector with the normalization values. Input NA for no normalization.
 
 pcaD <-pcaJr(peakM, centeringJ, scalingJ, normalization)
@@ -276,11 +276,13 @@ WSS
 ```
 
 ```{r warning=FALSE}
+data2clus <- peakM$intensity        # This variable allows you to choose the data you want to cluster. (It has to be a matrix of NxM 
+                                    # dimensions where N must have the same length as number of pixels has the peak matrix)
 norm4 <- peakM$normalizations$TIC   # Normalization applied to the data
 numClusters <- 4                    # Number of cluster to make the k-means
 merged <- T                         # This variable allows you to choose between clustering all images together (T) or clustering them
                                     # separately (F)
-kmeansData <- kmeansCluster(peakM, norm4, numClusters, merged)
+kmeansData <- kmeansCluster(peakM, data2clus, norm4, numClusters, merged)
 
 ```
 
@@ -289,7 +291,7 @@ kmeansData <- kmeansCluster(peakM, norm4, numClusters, merged)
 
 This next chunk plots the cluster vector onto the images. This allows users to see which pixels correspond to each cluster.
 ```{r}
-img2plot <- c(1,6,5)  # Images you want to plot. 
+img2plot <- c(1,4)  # Images you want to plot. 
 savePlot <- F         # Save the plot into a pdf file (T/F)   
 fileName3 <- ".pdf"   # Name of the .pdf file
 
@@ -306,10 +308,39 @@ differences of each cluster and image.
 Remember that if the K-means is done with all the images at the same time (merge == T) there may be images that don't contain any pixel
 from one of the clusters. These clusters won't have a medium spectrum associated with the image.
 ```{r warning=FALSE}
-img2plot <- c(1:6)               # Choose the images you want to ploy
-clus2comp <- c(1:4)              # Choose the clusters you want to plot
+img2plot <- c(1,4)                 # Choose the images you want to plot
+clus2comp <- c(3,4)              # Choose the clusters you want to plot
 norm <- peakM$normalizations$TIC # Input here a vector with the normalization values. Input NA for no normalization.
 
 clusterKmeansComparison(peakM, norm, img2plot, groupsImg, clus2comp, kmeansData)
+
+```
+
+### Comparing Clusters
+
+After comparing medium spectra from clusters we will want to compare the differences between the medium spectra of some of the clusters.
+In the next chunk you can choose the image and cluster from that image you want as the reference spectrum and those you want as the spectrum to compare. This will output a list with a data frame with four columns: 
+- The mz compared
+- The log2(fold change)
+- The p-value from a t-test
+- The error estimation (ppm error from closest gold peak found)
+```{r}
+# Remember if an image doesn't have the chosen cluster it won't work
+refImg <- 1     # Choose the image where the reference cluster is located
+refClus <- 3    # Choose the cluster you want to compare as reference
+compImg <- 4    # Choose the image where the cluster you want to compare is located
+compClus <- 4   # Choose the cluster from the image you want to use as comparison 
+norm <- peakM$normalizations$TIC  # Input here a vector with the normalization values. Input NA for no normalization.
+
+sumDataComp <-compareClusMedSpec(c(refImg, refClus), c(compImg, compClus), peakM, kmeansData, norm)
+```
+
+### Volcano Plot
+
+This next chunk creates a volcano plot with x = log2(Fold Change) and y = -log10(p-values) and some lines marking the p-value = 0.05 and the Fold Change = 2.
+```{r}
+
+volcanoPlotJ(sumDataComp)
+
 
 ```
