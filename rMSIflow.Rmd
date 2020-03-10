@@ -50,13 +50,13 @@ Before we begin working with the peak matrix we will need to tell R where all th
 
 # Insert here where your data is located (The peak matrix and the .tar images)
 wDir <- "C:/Users/jordi/Desktop/Metabolomica/Projecte MALDI/CollCap/"
-# Insert here where the file initialPlotter.R is located
+# Insert here where the file functions.R is located
 dir2 <- "C:/Users/jordi/Documents/GitHub/rMSIteachings/"
 # Insert the name of the peak matrix .zip
 peakData <- "mergeddata-peaks.zip"
 
 
-source(paste0(dir2, "initialPlotter.R")) # This sources all the functions we will need
+source(paste0(dir2, "functions.R")) # This sources all the functions we will need
 library(ggplot2)
 library(plotly)
 
