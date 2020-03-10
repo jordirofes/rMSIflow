@@ -214,7 +214,7 @@ The explained variance is the percentatge of variance of each PC from the total 
 variance it explains from the original data and it decreses with each PC. This chunk creates a graphic that shows the cumulative
 percentatge of variance from all PC. This allows users to choose the number of principal components they should choose to explore.
 ```{r}
-percentatge <- 0.5  # This marks the principal component with the cumulative percentatge of variance chosen from 0 to 1
+percentatge <- 0.7  # This marks the principal component with the cumulative percentatge of variance chosen from 0 to 1
   
 pcChooseNum(pcaD, percentatge)
 
@@ -228,7 +228,7 @@ This chunk calculates the classic PC vs PC two dimensional graphic to visualize 
 ```{r}
 pc2plot1 <- 1  # Select which PC are going to be plotted in a two dimensional graphic
 pc2plot2 <- 2  # 
-savePlot <- T  # Select if you want to save the plot into a pdf file (T/F)
+savePlot <- F  # Select if you want to save the plot into a pdf file (T/F)
 fileNpca2 <- "PC1vsPC2.pdf" # Name of the .pdf file
 
 plotPca <- pca2dimPlot(peakM, pcaD, groupsImg, pc2plot1,pc2plot2, savePlot, fileNpca2)
@@ -266,13 +266,21 @@ another cluster doesn't reduce as much the WSS. (The elbow of the plot)
 within it's cluster. The user should choose the number of clusters that maximizes the average silhouette.
  - The gap method: this method compares the WSS with their expected values under null reference distribution of the data. The user
 should choose the number of clusters that maximizes the gap stadistic so that it means that the distribution is far from a ran 
+
+
 ```{r}
-WSS <- factoextra::fviz_nbclust(peakM$intensity, kmeans, method = "wss")
-WSS
+
+norm1 <- peakM$normalizations$TIC
+testNumClus <- 10
+
+elbowPlot <- elbowMethod(peakM, peakM$normalizations$TIC, testNumClus)
+ggplotly(elbowPlot)
 # Silhouette <- factoextra::fviz_nbclust(peakM$intensity, kmeans, method = "silhouette")
 # Silhouette
 # Gap <- factoextra::fviz_nbclust(peakM$intensity, kmeans,  method = "gap_stat")
 # Gap
+
+
 ```
 
 ```{r warning=FALSE}
@@ -337,7 +345,7 @@ sumDataComp <-compareClusMedSpec(c(refImg, refClus), c(compImg, compClus), peakM
 
 ### Volcano Plot
 
-This next chunk creates a volcano plot with x = log2(Fold Change) and y = -log10(p-values) and some lines marking the p-value = log10(0.05) and the Fold Change = log2(2).
+This next chunk creates a volcano plot with x = log2(Fold Change) and y = log10(p-values) and some lines marking the p-value = log10(0.05) and the Fold Change = log2(2).
 ```{r}
 
 volcanoPlotJ(sumDataComp)

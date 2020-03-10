@@ -17,18 +17,18 @@ sepMatrix <- function(peakMatrix){
 
 ### This function plots the intensities of a given mass on the images
 
-initialPlotter <- function(peakMatrix, matrixL, mz, img, groups, norm, sv, file){
+initialPlotter <- function(peakMatrix, matrixL, mz, img, groups, norma, sv, file){
   a <- vector("list", length(img))
   # if(is.na(groups)){
   #   groups <-  peakMatrix$names
   #   }
   if (img == 0){
-      a <- rMSIproc::plotPeakImageG(peakMatrix, mz, normalization = norm)
+      a <- rMSIproc::plotPeakImageG(peakMatrix, mz, normalization = norma)
       if(sv == T){svPlot(file, a)}
       return(a)
   } else{
     for (j in (1:length(img))){
-      a[[j]] <- rMSIproc::plotPeakImageG(matrixL[[img[j]]], mz, normalization = norm)
+      a[[j]] <- rMSIproc::plotPeakImageG(matrixL[[img[j]]], mz, normalization = norma)
     }
   }
   pl <- lapply(1:length(img2plot), function(i){
@@ -49,10 +49,10 @@ svPlot <- function(flName, plots2save){
 
 ### This function makes a PCA from the peak matrix
 
-pcaJr <- function(peakMatrix, cnt = T, scl = T, norm = NA){
+pcaJr <- function(peakMatrix, cnt = T, scl = T, norma = NA){
   dataPca <- peakMatrix$intensity
-  if(!is.na(norm)){
-    dataPca <- dataPca/norm
+  if(!is.na(norma)){
+    dataPca <- dataPca/norma
     }
      colnames(dataPca) <- peakMatrix$mass
   pcaJr <- prcomp(dataPca, center = cnt, scale. = scl) ### Fem la PCA de la matriu de pics
@@ -175,10 +175,10 @@ parsed <- do.call(rbind, parsed)
 
 ### These functions plot the Average Spectrum of the peak matrix
 
-medSpecP <- function(peakMatrix, pixels, norm = NA){
+medSpecP <- function(peakMatrix, pixels, norma = NA){
     datapm <- peakMatrix$intensity
-    if(!is.na(norm)){
-      datapm <- datapm/norm
+    if(!is.na(norma)){
+      datapm <- datapm/norma
     }
     pixelMatrix <- datapm[pixels,]
     avgSpecpm <- apply(pixelMatrix, 2, mean)
@@ -186,8 +186,8 @@ medSpecP <- function(peakMatrix, pixels, norm = NA){
   }
 
 medSpecComp <- function(peakMat, pixels1, pixels2, normalization, name1, name2, sav2, filename2){
-  medSpec1 <- medSpecP(peakMat, pixels1, normalization)$Mitjana
-  medSpec2 <- medSpecP(peakMat, pixels2, normalization)$Mitjana
+  medSpec1 <- medSpecP(peakMat, pixels1, normalization)
+  medSpec2 <- medSpecP(peakMat, pixels2, normalization)
   medSpecdf <- as.data.frame(cbind(medSpec1, medSpec2, peakM$mass))
   colnames(medSpecdf) <- c("Spec1", "Spec2", "Mass") 
   
@@ -203,12 +203,28 @@ medSpecComp <- function(peakMat, pixels1, pixels2, normalization, name1, name2, 
   
   
 ### K-means
+elbowMethod <- function(peakMatrix, norma, testClus = 10){
   
-kmeansCluster <- function(peakMatrix, intensities, norm, numCl, together){
+  datapm <- peakMatrix$intensity
+  if(!is.na(norma)){
+    datapm <- datapm/norma
+  }
+  whitss <- sapply(1:testClus, function(x){
+    km <- kmeans(datapm, x)
+    km$tot.withinss
+  })
+  df <- data.frame("NC" = 1:testClus, "TW" =  whitss)
+  plotKmeans <- ggplot(df) + geom_point(aes(x = NC, y =TW)) + geom_line(aes(x = NC, y = TW)) +
+    ylab("Total Withinss") + xlab("Number of Clusters") + theme_minimal()
+  
+  return(plotKmeans)
+}  
+
+kmeansCluster <- function(peakMatrix, intensities, norma, numCl, together){
   clusData <- intensities
   
-  if(!is.na(norm)){
-    clusData <- clusData/norm
+  if(!is.na(norma)){
+    clusData <- clusData/norma
   }
   
   clData <- list()
@@ -262,7 +278,7 @@ clusterDataPlotting <- function(peakMatrix, matrixL, img, groups, clusterData, s
   # return(subplot(kplot))
   }
 
-clusterKmeansComparison <- function(peakMatrix, norm, img, groups, cluster, clusterData){
+clusterKmeansComparison <- function(peakMatrix, norma, img, groups, cluster, clusterData){
 
   if(is.na(groups)){               # Assigning groups to image names if vector class equals NA
     groups <- peakMatrix$names 
@@ -278,7 +294,7 @@ clusSpec <- lapply(img, function(x){          # We calculate the medium spectra 
     if(x == 1){limitDown <- 1}
     int <- limitDown:limitUp
   lapply(cluster,function(y){
-    data.frame(Spectra = medSpecP(peakM, which(clusterData[int] == y), norm), mz = peakM$mass, Image = groups[x], Cluster = y)
+    data.frame(Spectra = medSpecP(peakM, which(clusterData[int] == y), norma), mz = peakM$mass, Image = groups[x], Cluster = y)
     })
   })  
 
@@ -367,8 +383,8 @@ compareClusMedSpec <- function(refSpec, compSpec, peakMatrix, clusterData, norma
 
 volcanoPlotJ <- function(data2plot){
   
-  volcPlot <-ggplot(data2plot[[1]]) + geom_point(aes(x = Log2FC, y = log10(pvalues))) + geom_vline(aes(xintercept = log2(2), linetype = "1")) +
-    geom_hline(aes(yintercept = log10(0.05), linetype = "1")) + geom_vline(aes(xintercept = -log2(2), linetype = "1")) + 
-    scale_y_reverse()+ theme_minimal() + theme(legend.position = "none")
+  volcPlot <-ggplot(data2plot[[1]]) + geom_point(aes(x = Log2FC, y = -log10(pvalues))) + geom_vline(aes(xintercept = log2(2)), linetype = "dashed") +
+    geom_hline(aes(yintercept = log10(0.05), linetype = "1")) + geom_vline(aes(xintercept = -log2(2)),linetype = "dashed") + 
+    theme_minimal() + theme(legend.position = "none")
   return(volcPlot)
 }
