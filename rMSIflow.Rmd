@@ -257,17 +257,13 @@ distance to the center. Then the K-mean re-calculates the centers with the new a
 points associated to a center remain the same. Then the process is repeated with new centers and the clustering with the lowest
 cluster variance is chosen. 
 
-First of all we will need to choose the number of clusters we will separate our data. For this task we will use the factoextra
-function fviz_nbclus which allows to use different methods for choosing the adequate number of cluster the data wants.
+First of all we will need to choose the number of clusters we will separate our data. For this task we will use the factoextra function fviz_nbclus which allows to use different methods for choosing the adequate number of cluster the data wants.
  - The elbow method (WSS): this method utilizes the within cluster sum of squares (WSS) which represents the intra-cluster variation.
-The WSS is then calculated for each number of clusters (1, 2, 3,...10). The user should choose the number of clusters so that adding
-another cluster doesn't reduce as much the WSS. (The elbow of the plot)
- - The average silhouette method: this method tries to mesure the quality of the clustering calculating how well each point lies
-within it's cluster. The user should choose the number of clusters that maximizes the average silhouette.
- - The gap method: this method compares the WSS with their expected values under null reference distribution of the data. The user
-should choose the number of clusters that maximizes the gap stadistic so that it means that the distribution is far from a ran 
+The WSS is then calculated for each number of clusters (1, 2, 3,...10). The user should choose the number of clusters so that when adding another cluster it doesn't reduce as much the WSS. (The lower elbow part of the plot)
+ - The average silhouette method: this method tries to mesure the quality of the clustering calculating how well each point lies within it's cluster. The user should choose the number of clusters that maximizes the average silhouette.
+ - The gap method: this method compares the WSS with their expected values under null reference distribution of the data. The user should choose the number of clusters that maximizes the gap stadistic so that it means that the distribution is far from a randomly distributed
 
-
+For now the only recommended method is the elbow method. The next chunk allow users to make an elbow plot and decide the number of clusters they will choose when making the k-means.
 ```{r}
 
 norm1 <- peakM$normalizations$TIC
@@ -330,7 +326,7 @@ After comparing medium spectra from clusters we will want to compare the differe
 In the next chunk you can choose the image and cluster from that image you want as the reference spectrum and those you want as the spectrum to compare. This will output a list with a data frame with four columns: 
 - The mz compared
 - The log2(fold change)
-- The p-value from a t-test
+- The p-value from a t-test corrected by fdr (false discovery rate)
 - The error estimation (ppm error from closest gold peak found)
 ```{r}
 # Remember if an image doesn't have the chosen cluster it won't work
@@ -345,10 +341,10 @@ sumDataComp <-compareClusMedSpec(c(refImg, refClus), c(compImg, compClus), peakM
 
 ### Volcano Plot
 
-This next chunk creates a volcano plot with x = log2(Fold Change) and y = log10(p-values) and some lines marking the p-value = log10(0.05) and the Fold Change = log2(2).
+This next chunk creates a volcano plot with x = log2(Fold Change) and y = log10(p-values) and some lines marking the p-value = -log10(0.05) and the Fold Change = log2(2).
 ```{r}
 
-volcanoPlotJ(sumDataComp)
-
+plotVolcano <-volcanoPlotJ(sumDataComp)
+ggplotly(plotVolcano)
 
 ```

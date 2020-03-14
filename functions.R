@@ -335,7 +335,7 @@ compareClusMedSpec <- function(refSpec, compSpec, peakMatrix, clusterData, norma
     test <- t.test(specs2comp[[1]][,com], specs2comp[[2]][,com])
     test$p.value
   })
-  pvalues <- p.adjust(pvalues, method = "bonferroni")
+  pvalues <- p.adjust(pvalues, method = "fdr")
   
   
   
@@ -383,7 +383,7 @@ compareClusMedSpec <- function(refSpec, compSpec, peakMatrix, clusterData, norma
 
 volcanoPlotJ <- function(data2plot){
   
-  volcPlot <-ggplot(data2plot[[1]]) + geom_point(aes(x = Log2FC, y = -log10(pvalues))) + geom_vline(aes(xintercept = log2(2)), linetype = "dashed") +
+  volcPlot <-ggplot(data2plot[[1]]) + geom_point(aes(x = Log2FC, y = -log10(pvalues), color = mz)) + geom_vline(aes(xintercept = log2(2)), linetype = "dashed") +
     geom_hline(aes(yintercept = log10(0.05), linetype = "1")) + geom_vline(aes(xintercept = -log2(2)),linetype = "dashed") + 
     theme_minimal() + theme(legend.position = "none")
   return(volcPlot)
