@@ -38,7 +38,7 @@ initialPlotter <- function(peakMatrix, matrixL, mz, img, norma, sv, file){
       a[[j]] <- rMSIproc::plotPeakImageG(matrixL[[img[j]]], mz, normalization = norma[int])
     }
   }
-  pl <- lapply(1:length(img2plot), function(i){
+  pl <- lapply(1:length(img), function(i){
     plotly::ggplotly(p = a[[i]])
   })
   if(sv == T){svPlot(file, a)}
