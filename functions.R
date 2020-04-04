@@ -17,7 +17,7 @@ sepMatrix <- function(peakMatrix){
 
 ### This function plots the intensities of a given mass on the images
 
-initialPlotter <- function(peakMatrix, matrixL, mz, img, groups, norma, sv, file){
+initialPlotter <- function(peakMatrix, matrixL, mz, img, norma, sv, file){
   a <- vector("list", length(img))
   # if(is.na(groups)){
   #   groups <-  peakMatrix$names
@@ -28,7 +28,14 @@ initialPlotter <- function(peakMatrix, matrixL, mz, img, groups, norma, sv, file
       return(a)
   } else{
     for (j in (1:length(img))){
-      a[[j]] <- rMSIproc::plotPeakImageG(matrixL[[img[j]]], mz, normalization = norma)
+      
+      if(!is.na(norma)){
+      limitDown <- sum(peakMatrix$numPixels[1:(j-1)])+1
+      limitUp <- sum(peakMatrix$numPixels[1:j])
+      if(j == 1){limitDown <- 1}
+      int <- limitDown:limitUp} else{int = 1}
+      
+      a[[j]] <- rMSIproc::plotPeakImageG(matrixL[[img[j]]], mz, normalization = norma[int])
     }
   }
   pl <- lapply(1:length(img2plot), function(i){
