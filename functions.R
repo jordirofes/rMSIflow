@@ -30,11 +30,10 @@ initialPlotter <- function(peakMatrix, matrixL, mz, img, norma, sv, file){
     for (j in (1:length(img))){
       
       if(!is.na(norma)){
-      limitDown <- sum(peakMatrix$numPixels[1:(j-1)])+1
-      limitUp <- sum(peakMatrix$numPixels[1:j])
-      if(j == 1){limitDown <- 1}
+      limitDown <- sum(peakMatrix$numPixels[1:(img[j]-1)])+1
+      limitUp <- sum(peakMatrix$numPixels[1:img[j]])
+      if(img[j] == 1){limitDown <- 1}
       int <- limitDown:limitUp} else{int = 1}
-      
       a[[j]] <- rMSIproc::plotPeakImageG(matrixL[[img[j]]], mz, normalization = norma[int])
     }
   }
@@ -216,10 +215,12 @@ elbowMethod <- function(peakMatrix, norma, testClus = 10){
   if(!is.na(norma)){
     datapm <- datapm/norma
   }
+  
   whitss <- sapply(1:testClus, function(x){
     km <- kmeans(datapm, x)
     km$tot.withinss
   })
+  
   df <- data.frame("NC" = 1:testClus, "TW" =  whitss)
   plotKmeans <- ggplot(df) + geom_point(aes(x = NC, y =TW)) + geom_line(aes(x = NC, y = TW)) +
     ylab("Total Withinss") + xlab("Number of Clusters") + theme_minimal()
