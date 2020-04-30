@@ -188,7 +188,7 @@ normalization <- peakM$normalizations$TIC    # Input here a vector with the norm
 savePlot <- F               # Choose if you want to save the plots into a pdf file (T/F)
 fileName1 <- ".pdf"         # Choose the name of the pdf file. If a file has the same name it will be overwritten
 
-medSpecComp(peakM, pixels2compare, pixels2compare2, normalization, name1, name2, savePlot, fileName1)
+medSpecPlot(peakM, pixels2compare, pixels2compare2, normalization, name1, name2, savePlot, fileName1)
 
 
 ```
@@ -333,18 +333,19 @@ In the next chunk you can choose the image and cluster from that image you want 
 refImg <- 1     # Choose the image where the reference cluster is located
 refClus <- 3    # Choose the cluster you want to compare as reference
 compImg <- 4    # Choose the image where the cluster you want to compare is located
-compClus <- 4   # Choose the cluster from the image you want to use as comparison 
+compClus <- 3   # Choose the cluster from the image you want to use as comparison 
 norm <- peakM$normalizations$TIC  # Input here a vector with the normalization values. Input NA for no normalization.
 
-sumDataComp <-compareClusMedSpec(c(refImg, refClus), c(compImg, compClus), peakM, kmeansData, norm)
+sumDataComp <- compareClusMedSpec(c(refImg, refClus), c(compImg, compClus), peakM, kmeansData, norm)
 ```
 
 ### Volcano Plot
 
-This next chunk creates a volcano plot with x = log2(Fold Change) and y = log10(p-values) and some lines marking the p-value = -log10(0.05) and the Fold Change = log2(2).
+This next chunk creates a volcano plot with x = -log2(Fold Change) and y = -log10(p-values) and some lines marking the p-value = -log10(0.05) and the Fold Change = +-log2(2).
 ```{r}
+data2plot <- sumDataComp ### The data frame obtained from the comparison of spectra
 
-plotVolcano <-volcanoPlotJ(sumDataComp)
+ plotVolcano <-volcanoPlotJ(data2plot)
 ggplotly(plotVolcano)
 
 ```
