@@ -191,7 +191,7 @@ medSpecP <- function(peakMatrix, pixels, norma = NA){
     return(avgSpecpm)
   }
 
-medSpecPlot <- function(peakMat, pixels1, pixels2, normalization, name1, name2, sav2, filename2){
+medSpecComp <- function(peakMat, pixels1, pixels2, normalization, name1, name2, sav2, filename2){
   medSpec1 <- medSpecP(peakMat, pixels1, normalization)
   medSpec2 <- medSpecP(peakMat, pixels2, normalization)
   medSpecdf <- as.data.frame(cbind(medSpec1, medSpec2, peakM$mass))
@@ -284,72 +284,7 @@ clusterDataPlotting <- function(peakMatrix, matrixL, img, groups, clusterData, s
   #   return(plots)
   # })
   # return(subplot(kplot))
-}
-
-
-######## Comparison of two medium spectra
-
-medSpecComp <- function(refSpec, compSpec, peakMatrix, norma){
-  
-  if(!is.na(norma)){
-    refSpec <- refSpec/norma
-    compSpec <- compSpec/norma
   }
-  
-  
-  ###################################################################### P-Values
-  
-  pvalues <- sapply(1:length(peakMatrix$mass), function(com){
-    test <- t.test(refSpec[,com], compSpec[,com])
-    test$p.value
-  })
-  pvalues <- p.adjust(pvalues, method = "fdr")
-  
-  
-  
-  ###################################################################### Fold Change
-  refSpecMean <- apply(refSpec, 2, mean)
-  compSpecMean <- apply(compSpec, 2, mean)
-  
-  foldChange <- compSpecMean/refSpecMean
-  # change <- which(foldChange < 1)
-  # 
-  #   foldChange[change] <- means2comp[[1]][change]/means2comp[[2]][change]
-  foldChange <- log2(foldChange)
-  
-  ###################################################################### Error estimation
-  
-  auTList <- c(196.966570, 393.933140, 590.899710, 787.866280, 984.832850)
-  
-  rmIndex <- sapply(auTList, function(tMass){
-    diffMatrix <- (abs(peakMatrix$mass - tMass))
-    index <- which.min(diffMatrix)
-    return(index) ## This will return the index of the masses where the gold peaks are based on the real mass                                                 ## with the minimum difference with the teorical mass
-  })
-  auMass <- peakMatrix$mass[rmIndex]
-  
-  error <- abs((auTList - auMass)/auTList*10^6)
-  
-  massError <- sapply(peakMatrix$mass, function(mass){
-    
-    error[which.min(abs(auMass - mass))]
-    
-  })
-  
-  
-  ###################################################################### Mounting the data-frame
-  
-  tag <- paste("Image", compSpec[1] ,"Cluster",  compSpec[2],"Vs", "Image", refSpec[1], "Cluster", refSpec[2])
-  compData <- list()
-  compData[[1]] <- data.frame("mz" = peakMatrix$mass, "Log2FC" = foldChange, "pvalues" = pvalues, "ErrorEstimation" = massError)
-  
-  names(compData) <- tag
-  return(compData)
-  
-}
-
-
-######## COmparison of two medium spectra from clusters
 
 clusterKmeansComparison <- function(peakMatrix, norma, img, groups, cluster, clusterData){
 
@@ -382,9 +317,6 @@ return(plot1)
 }
 
 
-
-
-
 ### Fold Change and P-values from medium spectrum
 
 compareClusMedSpec <- function(refSpec, compSpec, peakMatrix, clusterData, norma){
@@ -392,11 +324,11 @@ compareClusMedSpec <- function(refSpec, compSpec, peakMatrix, clusterData, norma
     return(x[1])  
   })
   clusterData <- unlist(clusterData)
-  dt <- peakMatrix$intensity
+  dt <- peakMatrix$intensity/norma
   
+  ###################################################################### Mean Spectra
   
-  
-  specs2comp <- mapply(function(x, y){   ### Retrieves the spectra from the cluster
+  specs2comp <- mapply(function(x, y){
     limitDown <- sum(peakMatrix$numPixels[1:(x-1)])+1
     limitUp <- sum(peakMatrix$numPixels[1:x])
     if(x == 1){limitDown <- 1}
@@ -404,18 +336,63 @@ compareClusMedSpec <- function(refSpec, compSpec, peakMatrix, clusterData, norma
     Specs <- dt[which(clusterData[int] == y),]
   
   }, c(refSpec[1], compSpec[1]), c(refSpec[2], compSpec[2]), SIMPLIFY = F)
- compData <- medSpecComp(specs2comp[[1]], specs2comp[[2]], peakM, norma)
- 
- return(compData)
+
+  ###################################################################### P-Values
+  
+  pvalues <- sapply(1:length(peakMatrix$mass), function(com){
+    test <- t.test(specs2comp[[1]][,com], specs2comp[[2]][,com])
+    test$p.value
+  })
+  pvalues <- p.adjust(pvalues, method = "fdr")
+  
+  
+  
+  ###################################################################### Fold Change
+  means2comp <- lapply(specs2comp, function(x){
+    apply(x, 2, mean)
+  })
+  
+  foldChange <- means2comp[[2]]/means2comp[[1]]
+  change <- which(foldChange < 1)
+
+# 
+#   foldChange[change] <- means2comp[[1]][change]/means2comp[[2]][change]
+  foldChange <- log2(foldChange)
+  
+  ###################################################################### Error estimation
+  
+  auTList <- c(196.966570, 393.933140, 590.899710, 787.866280, 984.832850)
+  
+  rmIndex <- sapply(auTList, function(tMass){
+    diffMatrix <- (abs(peakMatrix$mass - tMass))
+    index <- which.min(diffMatrix)
+    return(index) ## This will return the index of the masses where the gold peaks are based on the real mass                                                 ## with the minimum difference with the teorical mass
+  })
+  auMass <- peakMatrix$mass[rmIndex]
+  
+  error <- abs((auTList - auMass)/auTList*10^6)
+  
+  massError <- sapply(peakMatrix$mass, function(mass){
+    
+    error[which.min(abs(auMass - mass))]
+    
+  })
+  
+  
+  ###################################################################### Mounting the data-frame
+  
+  tag = paste("Image", compSpec[1] ,"Cluster",  compSpec[2],"Vs", "Image", refSpec[1], "Cluster", refSpec[2])
+  compData <- list()
+  compData[[1]] <- data.frame("mz" = peakMatrix$mass, "Log2FC" = foldChange, "pvalues" = pvalues, "ErrorEstimation" = massError)
+
+  names(compData) <- tag
+  return(compData)
 }
 
 volcanoPlotJ <- function(data2plot){
   
-  volcPlot <-ggplot(data2plot[[1]]) + 
-    geom_point(aes(x = Log2FC, y = -log10(pvalues), color = mz)) + 
-    geom_vline(aes(xintercept = log2(2)), linetype = "dashed") +
-    geom_hline(aes(yintercept = -log10(0.05)), linetype = "dashed") + 
-    geom_vline(aes(xintercept = -log2(2)),linetype = "dashed") + 
+  volcPlot <-ggplot(data2plot[[1]]) + geom_point(aes(x = Log2FC, y = -log10(pvalues), color = mz)) + geom_vline(aes(xintercept = log2(2)), linetype = "dashed") +
+    geom_hline(aes(yintercept = log10(0.05), linetype = "1")) + geom_vline(aes(xintercept = -log2(2)),linetype = "dashed") + 
     theme_minimal() + theme(legend.position = "none")
   return(volcPlot)
 }
