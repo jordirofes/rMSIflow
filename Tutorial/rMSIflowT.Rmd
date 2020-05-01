@@ -2,22 +2,13 @@
 title: "rMSIproc analysis"
 author: "Jordi Rofes"
 date: "`r Sys.Date()`"
-output: html_document
 ---
 
 ### Introduction
-rMSI and rMSIproc are R packages that allow the visualization of MALDIims data (rMSI) and the data processing 
-from all the pixel spectra to a peak matrix (rMSIproc). This tutorial wants to provide a standardized workflow
-for scientists analyzing different rMSIproc peak matrixs obtained from different images. This tutorial will explain 
-how to: explore the peak matrix to visualize the different m/z intensities on the images, what normalization steps 
-should be utilized when making comparisons, how to visualize the medium spectrum of the raw data, the application of multidimensional reduction methods (PCA), the utilization of clustering methods like Kmeans and SOM to find clusters 
-of similar spectrums that can be related to differences between different tissue zones and the visualization and
-comparison of those clusters.
+rMSI and rMSIproc are R packages that allow the visualization of mass spectometry imaging data (rMSI) and the following data processing from all the spectra for each pixel to a peak matrix (rMSIproc). This tutorial wants to provide a flexible and customizable workflow for scientists analyzing different rMSIproc peak matrixes obtained from different images. This tutorial will explain  how to: explore the peak matrix to visualize the different m/z intensities on the images, what normalization steps should be utilized when making comparisons, how to visualize the medium spectrum of the raw data, the application of multidimensional reduction methods (PCA), the utilization of clustering methods like Kmeans and SOM to find clusters of similar spectrums that can be related to differences between different tissue zones and the visualization and comparison of those clusters.
 
 ### Required Packages
-For this tutorial you will need to install [rMSI](https://github.com/prafols/rMSI),
-[rMSIproc](https://github.com/prafols/rMSIproc), [ggplot2](https://github.com/tidyverse/ggplot2),
-[plotly](https://github.com/plotly/dashR) packages if you don't have them.
+For this tutorial you will need to install [rMSI](https://github.com/prafols/rMSI), [rMSIproc](https://github.com/prafols/rMSIproc), [ggplot2](https://github.com/tidyverse/ggplot2), [plotly](https://github.com/plotly/dashR) packages if you don't have them.
 
 ### rMSI
 
@@ -50,15 +41,14 @@ Before we begin working with the peak matrix we will need to tell R where all th
 
 # Insert here where your data is located (The peak matrix and the .tar images)
 wDir <- "C:/Users/jordi/Desktop/Metabolomica/Projecte MALDI/CollCap/"
-# Insert here where the file functions.R is located
-dir2 <- "C:/Users/jordi/Documents/GitHub/rMSIteachings/"
 # Insert the name of the peak matrix .zip
 peakData <- "mergeddata-peaks.zip"
 
 
-source(paste0(dir2, "functions.R")) # This sources all the functions we will need
+library(rMSIflow) # This sources all the functions we will need
 library(ggplot2)
 library(plotly)
+library(rMSIproc)
 
 
 ```
@@ -120,7 +110,7 @@ from all images and the second one allows users to compare them.
 ```{r}
 # We can use rMSI functions to plot the average spectra of an image to explore the raw data
 # Make sure that the .tar of the images is on the same directory you are working on
-medSpec <- medSpecRaw(wDir)
+#medSpec <- medSpecRaw(wDir)
 
 ```
 
@@ -137,9 +127,7 @@ medSpecRawplot(medSpec , avSpecimg2plot)
 
 ###  Class vector
 
-Before we begin analyzing the data we will need to input a class vector. The class vector is a vector c() that contains the different
-experimental groups where the images belong. This vector can be useful when visualizing the images to be able to compare the different
-experimental groups. 
+Before we begin analyzing the data we will need to input a class vector. The class vector is a vector c() that contains the different experimental groups where the images belong. This vector can be useful when visualizing the images to be able to compare the different experimental groups. 
 ```{r}
 # To allow classification of the images in different groups you will need to insert the names of each group in the vector groupsImg in the order they are on the peak matrix
 
@@ -174,8 +162,7 @@ peakM <- rMSIproc::MergePeakMatrices(matrixList)
 
 ### Medium spectrum from peak matrix from selected pixels
 
-This next chunk allows users to compare the medium spectra of chosen pixels. This medium spectrum is made calculating the mean of each
-mass from given pixels. This is useful for comparing different known zones that should have differend medium spectrum.
+This next chunk allows users to compare the medium spectra of chosen pixels. This medium spectrum is made calculating the mean of each mass from given pixels. This is useful for comparing different known zones that should have differend medium spectrum.
 ```{r}
 # This function makes the medium spectrum from selectec pixels from the peak matrix
 
@@ -195,10 +182,7 @@ medSpecPlot(peakM, pixels2compare, pixels2compare2, normalization, name1, name2,
 
 ### PCA
 
-Principal component analysis (PCA) is a multidimensional reduction method. PCA computes a new set of variables from the originals
-rotating the axis so that the variance between the variables is maximized. This new set corresponds to the first principal component
-(PC1). Then the perpendicular axis from PC1 is calculated and the variables are again computed, this will correspond the second
-principal component (PC2). This can be done multiple times, so that we can calculate any amount of PCs we want.
+Principal component analysis (PCA) is a multidimensional reduction method. PCA computes a new set of variables from the originals rotating the axis so that the variance between the variables is maximized. This new set corresponds to the first principal component (PC1). Then the perpendicular axis from PC1 is calculated and the variables are again computed, this will correspond the second principal component (PC2). This can be done multiple times, so that we can calculate any amount of PCs we want.
 ```{r echo=FALSE, message=FALSE, warning=FALSE}
 centeringJ <- T      # The centering ensures the data is found within the 0/0 origin
 scalingJ  <- T       # The scaling equalizes the data variance to decrease the bias given the natural difference in units of the variables 
@@ -210,9 +194,7 @@ pcaD <-pcaJr(peakM, centeringJ, scalingJ, normalization)
 
 ### Explained Variance
 
-The explained variance is the percentatge of variance of each PC from the total variance of all PCs. Each PC has a percentatge of
-variance it explains from the original data and it decreses with each PC. This chunk creates a graphic that shows the cumulative
-percentatge of variance from all PC. This allows users to choose the number of principal components they should choose to explore.
+The explained variance is the percentatge of variance of each PC from the total variance of all PCs. Each PC has a percentatge of variance it explains from the original data and it decreses with each PC. This chunk creates a graphic that shows the cumulative percentatge of variance from all PC. This allows users to choose the number of principal components they should choose to explore.
 ```{r}
 percentatge <- 0.7  # This marks the principal component with the cumulative percentatge of variance chosen from 0 to 1
   
@@ -252,10 +234,7 @@ pcaPlotImg(peakM, matrixList, pcaD, img2plotPca, groupsImg, pc2plot, savePlot, f
 
 ### K-means
 
-K-means is a clustering method. K-means generates random centers and associates each point to each center based on the euclidean
-distance to the center. Then the K-mean re-calculates the centers with the new associated points and repeats the process till the
-points associated to a center remain the same. Then the process is repeated with new centers and the clustering with the lowest
-cluster variance is chosen. 
+K-means is a clustering method. K-means generates random centers and associates each point to each center based on the euclidean distance to the center. Then the K-mean re-calculates the centers with the new associated points and repeats the process till the points associated to a center remain the same. Then the process is repeated with new centers and the clustering with the lowest cluster variance is chosen. 
 
 First of all we will need to choose the number of clusters we will separate our data. For this task we will use the factoextra function fviz_nbclus which allows to use different methods for choosing the adequate number of cluster the data wants.
  - The elbow method (WSS): this method utilizes the within cluster sum of squares (WSS) which represents the intra-cluster variation.
@@ -307,12 +286,10 @@ ggplotly(clusterDataPlotting(peakM, matrixList, img2plot, groupsImg, kmeansData,
 
 ### K-mean cluster comparison
 
-This chunk allows users to calculate the medium spectra of chosen clusters and images. This allows users to visualize the spectra
-differences of each cluster and image. 
-Remember that if the K-means is done with all the images at the same time (merge == T) there may be images that don't contain any pixel
-from one of the clusters. These clusters won't have a medium spectrum associated with the image.
+This chunk allows users to calculate the medium spectra of chosen clusters and images. This allows users to visualize the spectra differences of each cluster and image. 
+Remember that if the K-means is done with all the images at the same time (merge == T) there may be images that don't contain any pixel from one of the clusters. These clusters won't have a medium spectrum associated with the image.
 ```{r warning=FALSE}
-img2plot <- c(1,4)                 # Choose the images you want to plot
+img2plot <- c(1,4)               # Choose the images you want to plot
 clus2comp <- c(3,4)              # Choose the clusters you want to plot
 norm <- peakM$normalizations$TIC # Input here a vector with the normalization values. Input NA for no normalization.
 
@@ -339,13 +316,40 @@ norm <- peakM$normalizations$TIC  # Input here a vector with the normalization v
 sumDataComp <- compareClusMedSpec(c(refImg, refClus), c(compImg, compClus), peakM, kmeansData, norm)
 ```
 
+### Comparing other spectra
+
+Sometimes you might not want to compare the clusters of one image. Other options might be interesting for analysis like comparing two full images. For this reason you can use this chunk to obtain the same results as the chunk before but with the chosen pixels of the spectra. Note that the functions input 
+
+```{r}
+refpixels <- c(1:400)   # The pixels that contain the reference spectrum
+comppixels <- c(401:600)# The pixels that contain the spectrum to compare
+norm <- peakM$normalizations$TIC # Input here a vector with the normalization values. Input NA for no normalization.
+
+data2comp <- medSpecComp(peakM$intensity[refpixels,], peakM$intensity[comppixels,], peakM, norm)
+```
+
 ### Volcano Plot
 
 This next chunk creates a volcano plot with x = -log2(Fold Change) and y = -log10(p-values) and some lines marking the p-value = -log10(0.05) and the Fold Change = +-log2(2).
 ```{r}
 data2plot <- sumDataComp ### The data frame obtained from the comparison of spectra
 
- plotVolcano <-volcanoPlotJ(data2plot)
+plotVolcano <-volcanoPlotJ(data2plot)
 ggplotly(plotVolcano)
 
 ```
+
+### Next steps
+
+After comparing the different spectra the next step would be to search for compounds on databases. rMSIproc last version contains a function for annotating peak matrixes called peakAnnotation. This function searches for monoisotopics m/z and adducts and annotates them.
+
+Note that this function is only on the latest rMSIproc version and is still in development. This means that it can sometimes cause R to crash. Be sure to save your workspace before using it. If it doesn't work you should reestart R and retry. If that doesn't work then the m/z have to be annotated manually.
+```{r}
+peakMant <- peakAnnotation(peakM)
+```
+These m/z can be used to search on databases and then assign them to a list of putative compounds.
+
+
+
+
+
