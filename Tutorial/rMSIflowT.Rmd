@@ -244,11 +244,12 @@ The WSS is then calculated for each number of clusters (1, 2, 3,...10). The user
 
 For now the only recommended method is the elbow method. The next chunk allow users to make an elbow plot and decide the number of clusters they will choose when making the k-means.
 ```{r}
+data2clus <- peakM$intensity     # The data used to make the plots. It must be a matrix NxM where N are the observations and M the variables
+norm <- peakM$normalizations$TIC # The normalization vector applied to the data
+testNumClus <- 100               # The number of clusters to test. (Usually no more than 10 clusters are needed)
+merged <- F                      # If the images have to be clustered together or separately
 
-norm1 <- peakM$normalizations$TIC
-testNumClus <- 10
-
-elbowPlot <- elbowMethod(peakM, peakM$normalizations$TIC, testNumClus)
+elbowPlot <- elbowMethod(peakM, data2clus, norm, testNumClus, merged)
 ggplotly(elbowPlot)
 # Silhouette <- factoextra::fviz_nbclust(peakM$intensity, kmeans, method = "silhouette")
 # Silhouette
@@ -260,10 +261,10 @@ ggplotly(elbowPlot)
 
 ```{r warning=FALSE}
 data2clus <- peakM$intensity        # This variable allows you to choose the data you want to cluster. (It has to be a matrix of NxM 
-                                    # dimensions where N must have the same length as number of pixels has the peak matrix)
+                                    # dimensions where N must have the same length as the number of pixels of the peak matrix)
 norm4 <- peakM$normalizations$TIC   # Normalization applied to the data
 numClusters <- 4                    # Number of cluster to make the k-means
-merged <- T                         # This variable allows you to choose between clustering all images together (T) or clustering them
+merged <- F                         # This variable allows you to choose between clustering all images together (T) or clustering them
                                     # separately (F)
 kmeansData <- kmeansCluster(peakM, data2clus, norm4, numClusters, merged)
 
@@ -274,7 +275,7 @@ kmeansData <- kmeansCluster(peakM, data2clus, norm4, numClusters, merged)
 
 This next chunk plots the cluster vector onto the images. This allows users to see which pixels correspond to each cluster.
 ```{r}
-img2plot <- c(1,4)  # Images you want to plot. 
+img2plot <- c(1,4)    # Images you want to plot. 
 savePlot <- F         # Save the plot into a pdf file (T/F)   
 fileName3 <- ".pdf"   # Name of the .pdf file
 
@@ -332,7 +333,7 @@ data2comp <- medSpecComp(peakM$intensity[refpixels,], peakM$intensity[comppixels
 
 This next chunk creates a volcano plot with x = -log2(Fold Change) and y = -log10(p-values) and some lines marking the p-value = -log10(0.05) and the Fold Change = +-log2(2).
 ```{r}
-data2plot <- sumDataComp ### The data frame obtained from the comparison of spectra
+data2plot <- sumDataComp # The data frame obtained from the comparison of spectra
 
 plotVolcano <-volcanoPlotJ(data2plot)
 ggplotly(plotVolcano)

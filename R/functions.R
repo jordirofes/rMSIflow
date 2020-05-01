@@ -216,45 +216,73 @@ medSpecPlot <- function(peakMat, pixels1, pixels2, normalization, name1, name2, 
 
 ### K-means
 #'@export
-elbowMethod <- function(peakMatrix, norma, testClus = 10){
+elbowMethod <- function(peakMatrix, dt, norma, testClus = 10, together){
 
   datapm <- peakMatrix$intensity
-  if(!is.na(norma)){
-    datapm <- datapm/norma
-  }
 
   whitss <- sapply(1:testClus, function(x){
-    km <- kmeans(datapm, x)
-    km$tot.withinss
-  })
 
-  df <- data.frame("NC" = 1:testClus, "TW" =  whitss)
-  plotKmeans <- ggplot(df) + geom_point(aes(x = NC, y =TW)) + geom_line(aes(x = NC, y = TW)) +
+    km <- kmeansCluster(peakMatrix, dt, norma, x, together)
+    wt <- sapply(km, function(y){y$tot.withinss})
+    })
+testClus <- 1:testClus
+imgVec <- 1
+whitsvec <- list()
+
+if(together == F){
+  for(i in 1:dim(whitss)[1]){
+
+    whitsvec <- c(whitsvec, whitss[i,])
+
+  }
+  whitsvec <- unlist(whitsvec)
+  whitss <- whitsvec
+
+
+  imgVec <- lapply(1:length(peakM$numPixels), function(x){rep(x, length(testClus))})
+  imgVec <- unlist(imgVec)
+  testClus <- rep(testClus, length(peakM$numPixels))
+  }
+
+
+  df <- data.frame("NC" = testClus, "TW" =  whitss, "Img" = imgVec)
+  plotKmeans <- ggplot(df) + geom_point(aes(x = NC, y = TW, colour = Img)) + geom_line(aes(x = NC, y = TW, colour = Img)) +
     ylab("Total Withinss") + xlab("Number of Clusters") + theme_minimal()
 
   return(plotKmeans)
+
 }
+
 #'@export
 kmeansCluster <- function(peakMatrix, intensities, norma, numCl, together){
   clusData <- intensities
 
-  if(!is.na(norma)){
+
+
+  if(!any(is.na(norma))){
     clusData <- clusData/norma
   }
 
   clData <- list()
   if(together == F){
+
+    if(length(numCl) == 1){ numCl <- rep(numCl, length(peakM$numPixels))}
+    if(length(numCl) > 1 & length(numCl) != length(peakM$numPixels)){ stop("The number of clusters must be of length one or have the same length as number of images")}
+
   for (i in 1:length(peakMatrix$numPixels)){
     limitDown <- sum(peakMatrix$numPixels[1:(i-1)])+1
     limitUp <- sum(peakMatrix$numPixels[1:i])
     int <-limitDown:limitUp
     if (i == 1){ limitDown <- 1}
-
-      clData[[i]] <- kmeans(clusData[limitDown:limitUp, ], numCl)
+    cl <- numCl[i]
+      clData[[i]] <- kmeans(clusData[limitDown:limitUp, ], cl)
 
   }
   } else{
-  clData[[1]] <- kmeans(clusData, numCl)
+
+    if(length(numCl) > 1){stop("The number of clusters must be of length one when merged equals T")}
+
+    clData[[1]] <- kmeans(clusData, numCl)
   }
   return(clData)
 
