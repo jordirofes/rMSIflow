@@ -232,7 +232,8 @@ whitsvec <- list()
 if(together == F){
   for(i in 1:dim(whitss)[1]){
 
-    whitsvec <- c(whitsvec, whitss[i,])
+
+    whitsvec <- c(whitsvec, whitss[i,]/sum(whitss[i,])*100)
 
   }
   whitsvec <- unlist(whitsvec)
@@ -242,12 +243,12 @@ if(together == F){
   imgVec <- lapply(1:length(peakM$numPixels), function(x){rep(x, length(testClus))})
   imgVec <- unlist(imgVec)
   testClus <- rep(testClus, length(peakM$numPixels))
-  }
+  }else{whitss <- whitss/sum(whitss)*100 }
 
 
   df <- data.frame("NC" = testClus, "TW" =  whitss, "Img" = imgVec)
   plotKmeans <- ggplot(df) + geom_point(aes(x = NC, y = TW, colour = Img)) + geom_line(aes(x = NC, y = TW, colour = Img)) +
-    ylab("Total Withinss") + xlab("Number of Clusters") + theme_minimal()
+    ylab("Total Withinss (% from total)") + xlab("Number of Clusters") + theme_minimal()
 
   return(plotKmeans)
 
