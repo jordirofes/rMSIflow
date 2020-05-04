@@ -94,7 +94,7 @@ pca2dimPlot <- function(peakMatrix, pcaJr, grpImg, pc1, pc2, sv2, fileN2) {
   xvariance <- round(variance/sum(variance)*100, 1)
 
   plotPca <- ggplot(dataPca,aes(x = PC1, y = PC2, colour = Groups))+ geom_point(alpha = 0.5)+ stat_ellipse() +
-    xlab(paste0("PC", pc1 ,"(", xvariance[pc1],"%)")) + ylab(paste0("PC",pc2, "(", xvariance[pc2],"%)")) +
+    xlab(paste0("PC", pc1 ," (", xvariance[pc1],"%)")) + ylab(paste0("PC",pc2, " (", xvariance[pc2],"%)")) +
     theme_minimal() + geom_hline(yintercept = 0) + geom_vline(xintercept = 0) +
     geom_point(aes(x= 0, y =0), color= "black")
   if(sv2 == T){
@@ -131,7 +131,7 @@ pcaPlotImg <- function(peakMatrix, matrixLst, pcaJr, img ,grpImg, pc, sv, fileN)
 
 }
 #'@export
-pcChooseNum <- function(pcaJr, perc = 0.9){
+pcChooseNum <- function(pcaJr, perc = 0.9, npc = 50){
 
   variance <- pcaJr$sdev^2
   pcVar <- sapply(variance, function(dev){
@@ -141,11 +141,16 @@ pcChooseNum <- function(pcaJr, perc = 0.9){
   cumulative <- sapply(1:length(variance), function(x){sum(variance[1:x])})/sum(variance)*100
 
   pcplotData <- data.frame(Cumulative = cumulative, PC = 1:length(pcaJr$sdev))
+
   bound <- which.min(abs(cumulative-perc*100))
+  if(nrow(pcplotData) > npc){
+    pcplotData <- pcplotData[1:npc,]
+  }
 
-
-  plot <- ggplotly(ggplot(pcplotData) + geom_line(aes(x = PC, y = Cumulative)) + geom_point(aes(x = PC, y = Cumulative)) + theme_minimal() +
-                     ylab("Cummulative %") + xlab("Principal Component") + geom_segment(aes(x = bound, y = 0, xend = bound, yend = cumulative[bound]), linetype = "dashed") +
+  plot <- ggplotly(ggplot(pcplotData) + geom_line(aes(x = PC, y = Cumulative)) +
+                     geom_point(aes(x = PC, y = Cumulative)) + theme_minimal() +
+                     ylab("Accumulative variance (%)") + xlab("Principal Component") +
+                     geom_segment(aes(x = bound, y = 0, xend = bound, yend = cumulative[bound]), linetype = "dashed") +
                      geom_segment(aes(x = 0, y = cumulative[bound], xend = bound, yend = cumulative[bound]), linetype = "dashed"))
 
   # plot <- ggplotly(ggplot(pcplotData) + geom_line(aes(x = PC, y = Std)) + geom_point(aes(x = PC, y = Std)) + theme_minimal() +
@@ -246,7 +251,7 @@ if(together == F){
   }else{whitss <- whitss/sum(whitss)*100 }
 
 
-  df <- data.frame("NC" = testClus, "TW" =  whitss, "Img" = imgVec)
+  df <- data.frame("NC" = testClus, "TW" =  whitss, "Img" = as.factor(imgVec))
   plotKmeans <- ggplot(df) + geom_point(aes(x = NC, y = TW, colour = Img)) + geom_line(aes(x = NC, y = TW, colour = Img)) +
     ylab("Total Withinss (% from total)") + xlab("Number of Clusters") + theme_minimal()
 
