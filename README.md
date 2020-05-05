@@ -7,4 +7,4 @@ To install this package you have to use:
 
 devtools::install_github("jordirofes/rMSIflow")
 
-The tutorial for the package is included on the tutorial folder from the package. You can access it by entering the rMSIflow folder after installing the package or by downloading it directly from this repository.
+The tutorial for the package is included on the tutorial folder from the package. You can access it by downloading the rMSIflow folder from this repository.
