@@ -178,17 +178,36 @@ medSpecRaw <- function(directory){
 #'@export
 medSpecRawplot <- function(specData, img2plot2){
 
-specPlot <- ggplot()
 parsed <- lapply(img2plot2, function(x){
-  data.frame(mz = specData[[x]][,1], int = specData[[x]][,2], image = rep(paste("Image",x),
+  data.frame(mz = specData[[x]][,1], int = specData[[x]][,2], image = rep(paste("Image",x, "raw data"),
              times = nrow(specData[[x]])))
 })
 parsed <- do.call(rbind, parsed)
-  plots2 <- ggplotly(ggplot(parsed) + geom_line(aes(x = mz, y = int,
-                          colour = image)) + theme_minimal() + xlab("Mass") + ylab("Intensity") +
-                          theme(legend.title = element_blank()))
-   return(plots2)
+
+
+
+parsed2 <- lapply(img2plot2, function(y){
+
+  limitDown <- sum(peakM$numPixels[1:(y-1)])+1
+  limitUp <- sum(peakM$numPixels[1:y])
+  int <-limitDown:limitUp
+  if (y == 1){ limitDown <- 1}
+  inten <- medSpecP(peakM, int, NA)
+
+  data.frame(mz2 = peakM$mass, i = inten, gr = paste("Image",y, "peak matrix"))
+})
+
+parsed2 <- do.call(rbind, parsed2)
+
+plots2 <- ggplotly(ggplot() + geom_line(aes(x = parsed$mz, y = parsed$int, colour = parsed$image)) +
+                     theme_minimal() + xlab("Mass") + ylab("Intensity") +
+                     theme(legend.title = element_blank()) +
+                     geom_segment(aes(x = parsed2$mz2 ,y = 0, xend = parsed2$mz2, yend = parsed2$i, colour = parsed2$gr)))
+
+return(plots2)
 }
+
+
 
 ### These functions plot the Average Spectrum of the peak matrix
 #'@export
