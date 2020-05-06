@@ -160,7 +160,7 @@ pcChooseNum <- function(pcaJr, perc = 0.9, npc = 50){
 
 ### These functions plot the Average Raw Spectrum of selected images in an interactive way
 #'@export
-medSpecRaw <- function(directory){
+avSpecRaw <- function(directory){
   bad <- list.files(wDir, pattern = "^ramdisk")
   imageName <- list.files(wDir, pattern = "proc.tar")
   imageName <- imageName[!(imageName %in% bad)]
@@ -175,8 +175,9 @@ medSpecRaw <- function(directory){
   })
   return(avSpec)
 }
+
 #'@export
-medSpecRawplot <- function(specData, img2plot2){
+avSpecRawplot <- function(specData, img2plot2){
 
 parsed <- lapply(img2plot2, function(x){
   data.frame(mz = specData[[x]][,1], int = specData[[x]][,2], image = rep(paste("Image",x, "raw data"),
@@ -192,7 +193,7 @@ parsed2 <- lapply(img2plot2, function(y){
   limitUp <- sum(peakM$numPixels[1:y])
   int <-limitDown:limitUp
   if (y == 1){ limitDown <- 1}
-  inten <- medSpecP(peakM, int, NA)
+  inten <- avSpecP(peakM, int, NA)
 
   data.frame(mz2 = peakM$mass, i = inten, gr = paste("Image",y, "peak matrix"))
 })
@@ -211,7 +212,7 @@ return(plots2)
 
 ### These functions plot the Average Spectrum of the peak matrix
 #'@export
-medSpecP <- function(peakMatrix, pixels, norma = NA){
+avSpecP <- function(peakMatrix, pixels, norma = NA){
     datapm <- peakMatrix$intensity
     if(!is.na(norma)){
       datapm <- datapm/norma
@@ -221,13 +222,13 @@ medSpecP <- function(peakMatrix, pixels, norma = NA){
     return(avgSpecpm)
   }
 #'@export
-medSpecPlot <- function(peakMat, pixels1, pixels2, normalization, name1, name2, sav2, filename2){
-  medSpec1 <- medSpecP(peakMat, pixels1, normalization)
-  medSpec2 <- medSpecP(peakMat, pixels2, normalization)
-  medSpecdf <- as.data.frame(cbind(medSpec1, medSpec2, peakM$mass))
-  colnames(medSpecdf) <- c("Spec1", "Spec2", "Mass")
+avSpecPlot <- function(peakMat, pixels1, pixels2, normalization, name1, name2, sav2, filename2){
+  avSpec1 <- avSpecP(peakMat, pixels1, normalization)
+  avSpec2 <- avSpecP(peakMat, pixels2, normalization)
+  avSpecdf <- as.data.frame(cbind(avSpec1, avSpec2, peakM$mass))
+  colnames(avSpecdf) <- c("Spec1", "Spec2", "Mass")
 
-  aveSpec <- ggplot(medSpecdf) + geom_segment(aes(x = Mass,y = 0, xend = Mass, yend = Spec1, colour = name1)) +
+  aveSpec <- ggplot(avSpecdf) + geom_segment(aes(x = Mass,y = 0, xend = Mass, yend = Spec1, colour = name1)) +
                                 geom_segment(aes(x = Mass, y = 0, xend = Mass, yend = Spec2, colour = name2))  +
                                 xlab("Mass") + ylab("Intensity") + theme_minimal() + theme(legend.title = element_blank())
 
@@ -347,9 +348,9 @@ clusterDataPlotting <- function(peakMatrix, matrixL, img, groups, clusterData, s
 }
 
 
-######## Comparison of two medium spectra
+######## Comparison of two average spectra
 #'@export
-medSpecComp <- function(refSpec, compSpec, peakMatrix, norma){
+avSpecComp <- function(refSpec, compSpec, peakMatrix, norma){
 
   if(!is.na(norma)){
     refSpec <- refSpec/norma
@@ -409,7 +410,7 @@ medSpecComp <- function(refSpec, compSpec, peakMatrix, norma){
 }
 
 
-######## COmparison of two medium spectra from clusters
+######## COmparison of two average spectra from clusters
 #'@export
 clusterKmeansComparison <- function(peakMatrix, norma, img, groups, cluster, clusterData){
 
@@ -421,13 +422,13 @@ clusterKmeansComparison <- function(peakMatrix, norma, img, groups, cluster, clu
   })
 clusterData <- unlist(clusterData)
 
-clusSpec <- lapply(img, function(x){          # We calculate the medium spectra from chosen images and chosen clusters
+clusSpec <- lapply(img, function(x){          # We calculate the average spectra from chosen images and chosen clusters
     limitDown <- sum(peakMatrix$numPixels[1:(x-1)])+1
     limitUp <- sum(peakMatrix$numPixels[1:x])
     if(x == 1){limitDown <- 1}
     int <- limitDown:limitUp
   lapply(cluster,function(y){
-    data.frame(Spectra = medSpecP(peakM, which(clusterData[int] == y), norma), mz = peakM$mass, Image = groups[x], Cluster = y)
+    data.frame(Spectra = avSpecP(peakM, which(clusterData[int] == y), norma), mz = peakM$mass, Image = groups[x], Cluster = y)
     })
   })
 
@@ -445,9 +446,9 @@ return(plot1)
 
 
 
-### Fold Change and P-values from medium spectrum
+### Fold Change and P-values from average spectrum
 #'@export
-compareClusMedSpec <- function(refSpec, compSpec, peakMatrix, clusterData, norma){
+compareClusAvSpec <- function(refSpec, compSpec, peakMatrix, clusterData, norma){
   clusterData <- lapply(clusterData, function(x){   # Getting the clusterization from the k-means data
     return(x[1])
   })
@@ -464,7 +465,7 @@ compareClusMedSpec <- function(refSpec, compSpec, peakMatrix, clusterData, norma
     Specs <- dt[which(clusterData[int] == y),]
 
   }, c(refSpec[1], compSpec[1]), c(refSpec[2], compSpec[2]), SIMPLIFY = F)
- compData <- medSpecComp(specs2comp[[1]], specs2comp[[2]], peakM, norma)
+ compData <- avSpecComp(specs2comp[[1]], specs2comp[[2]], peakM, norma)
 
  return(compData)
 }
