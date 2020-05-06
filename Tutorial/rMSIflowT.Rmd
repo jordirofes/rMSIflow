@@ -5,7 +5,7 @@ date: "`r Sys.Date()`"
 ---
 
 ### Introduction
-rMSI and rMSIproc are R packages that allow the visualization of mass spectometry imaging data (rMSI) and the following data processing from all the spectra for each pixel to a peak matrix (rMSIproc). This tutorial wants to provide a flexible and customizable workflow for scientists analyzing different rMSIproc peak matrixes obtained from different images. This tutorial will explain  how to: explore the peak matrix to visualize the different m/z intensities on the images, what normalization steps should be utilized when making comparisons, how to visualize the medium spectrum of the raw data, the application of multidimensional reduction methods (PCA), the utilization of clustering methods like Kmeans and SOM to find clusters of similar spectrums that can be related to differences between different tissue zones and the visualization and comparison of those clusters.
+rMSI and rMSIproc are R packages that allow the visualization of mass spectometry imaging data (rMSI) and the following data processing from all the spectra for each pixel to a peak matrix (rMSIproc). This tutorial wants to provide a flexible and customizable workflow for scientists analyzing different rMSIproc peak matrixes obtained from different images. This tutorial will explain  how to: explore the peak matrix to visualize the different m/z intensities on the images, what normalization steps should be utilized when making comparisons, how to visualize the average spectrum of the raw data, the application of multidimensional reduction methods (PCA), the utilization of clustering methods like Kmeans and SOM to find clusters of similar spectrums that can be related to differences between different tissue zones and the visualization and comparison of those clusters.
 
 ### Required Packages
 For this tutorial you will need to install [rMSI](https://github.com/prafols/rMSI), [rMSIproc](https://github.com/prafols/rMSIproc), [ggplot2](https://github.com/tidyverse/ggplot2), [plotly](https://github.com/plotly/dashR) packages if you don't have them.
@@ -102,26 +102,26 @@ fileN <- "plotsRAW.pdf"   # Choose the name of the pdf file. If a file has the s
 initialPlotter(peakM, matrixList, mz2plot,img2plot, normalization, savePlot, fileN)
 ```
 
-### Medium Spectrum from raw data
+### Average Spectrum from raw data
 
-For more information we can visualize the raw data by using rMSI functions to calculate de medium spectra of each image in profile
-format. The medium spectrum is the spectrum that contains the mean of each m/z. The next first chunk will calculate the medium spectra
+For more information we can visualize the raw data by using rMSI functions to calculate de average spectra of each image in profile
+format. The average spectrum is the spectrum that contains the mean of each m/z. The next first chunk will calculate the average spectra
 from all images and the second one allows users to compare them.
 ```{r}
 # We can use rMSI functions to plot the average spectra of an image to explore the raw data
 # Make sure that the .tar of the images is on the same directory you are working on
-#medSpec <- medSpecRaw(wDir)
+avSpec <- avSpecRaw(wDir)
 
 ```
 
 ```{r message=FALSE, warning=FALSE}
 # Here we plot the average spectrums we want to compare
-avSpecimg2plot <- c(1:6)      # Select the images you want to compare. Writing c(1,2,3) allows you to plot more than 
+avSpecimg2plot <- c(1:5)      # Select the images you want to compare. Writing c(1,2,3) allows you to plot more than 
                             # one image at the same time
 
 library(ggplot2)
 library(plotly)
-medSpecRawplot(medSpec , avSpecimg2plot)
+avSpecRawplot(avSpec , avSpecimg2plot)
 
 ```
 
@@ -160,11 +160,11 @@ matrixList <- matrixList[newOrder]
 peakM <- rMSIproc::MergePeakMatrices(matrixList)
 ```
 
-### Medium spectrum from peak matrix from selected pixels
+### Average spectrum from peak matrix from selected pixels
 
-This next chunk allows users to compare the medium spectra of chosen pixels. This medium spectrum is made calculating the mean of each mass from given pixels. This is useful for comparing different known zones that should have differend medium spectrum.
+This next chunk allows users to compare the average spectra of chosen pixels. This average spectrum is made calculating the mean of each mass from given pixels. This is useful to compare different known zones that should have different average spectrum.
 ```{r}
-# This function makes the medium spectrum from selectec pixels from the peak matrix
+# This function makes the average spectrum from selectec pixels from the peak matrix
 
 pixels2compare <- c(1:50)   # Input the first set of pixels that are going to be compared
 pixels2compare2 <- c(51:100)# Input the second set of pixels that are going to be compared 
@@ -175,7 +175,7 @@ normalization <- peakM$normalizations$TIC    # Input here a vector with the norm
 savePlot <- F               # Choose if you want to save the plots into a pdf file (T/F)
 fileName1 <- ".pdf"         # Choose the name of the pdf file. If a file has the same name it will be overwritten
 
-medSpecPlot(peakM, pixels2compare, pixels2compare2, normalization, name1, name2, savePlot, fileName1)
+avSpecPlot(peakM, pixels2compare, pixels2compare2, normalization, name1, name2, savePlot, fileName1)
 
 
 ```
@@ -287,8 +287,8 @@ ggplotly(clusterDataPlotting(peakM, matrixList, img2plot, groupsImg, kmeansData,
 
 ### K-mean cluster comparison
 
-This chunk allows users to calculate the medium spectra of chosen clusters and images. This allows users to visualize the spectra differences of each cluster and image. 
-Remember that if the K-means is done with all the images at the same time (merge == T) there may be images that don't contain any pixel from one of the clusters. These clusters won't have a medium spectrum associated with the image.
+This chunk allows users to calculate the average spectra of chosen clusters and images. This allows users to visualize the spectra differences of each cluster and image. 
+Remember that if the K-means is done with all the images at the same time (merge == T) there may be images that don't contain any pixel from one of the clusters. These clusters won't have a average spectra associated with the image.
 ```{r warning=FALSE}
 img2plot <- c(1,4)               # Choose the images you want to plot
 clus2comp <- c(3,4)              # Choose the clusters you want to plot
@@ -300,7 +300,7 @@ clusterKmeansComparison(peakM, norm, img2plot, groupsImg, clus2comp, kmeansData)
 
 ### Comparing Clusters
 
-After comparing medium spectra from clusters we will want to compare the differences between the medium spectra of some of the clusters.
+After comparing average spectra from clusters we will want to compare the differences between the average spectra of some of the clusters.
 In the next chunk you can choose the image and cluster from that image you want as the reference spectrum and those you want as the spectrum to compare. This will output a list with a data frame with four columns: 
 - The mz compared
 - The log2(fold change)
@@ -314,7 +314,7 @@ compImg <- 4    # Choose the image where the cluster you want to compare is loca
 compClus <- 3   # Choose the cluster from the image you want to use as comparison 
 norm <- peakM$normalizations$TIC  # Input here a vector with the normalization values. Input NA for no normalization.
 
-sumDataComp <- compareClusMedSpec(c(refImg, refClus), c(compImg, compClus), peakM, kmeansData, norm)
+sumDataComp <- compareClusAvSpec(c(refImg, refClus), c(compImg, compClus), peakM, kmeansData, norm)
 ```
 
 ### Comparing other spectra
@@ -326,7 +326,7 @@ refpixels <- c(1:400)   # The pixels that contain the reference spectrum
 comppixels <- c(401:600)# The pixels that contain the spectrum to compare
 norm <- peakM$normalizations$TIC # Input here a vector with the normalization values. Input NA for no normalization.
 
-data2comp <- medSpecComp(peakM$intensity[refpixels,], peakM$intensity[comppixels,], peakM, norm)
+data2comp <- avSpecComp(peakM$intensity[refpixels,], peakM$intensity[comppixels,], peakM, norm)
 ```
 
 ### Volcano Plot
