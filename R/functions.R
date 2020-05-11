@@ -65,7 +65,7 @@ pcaJr <- function(peakMatrix, dataPca = peakM$intensity ,cnt = T, scl = T, norma
 
   if(!is.na(norma)){
     dataPca <- dataPca/norma
-    }
+  }
      # colnames(dataPca) <- peakMatrix$mass
   pcaJr <- prcomp(dataPca, center = cnt, scale. = scl) ### Fem la PCA de la matriu de pics
   return(pcaJr)
@@ -334,7 +334,7 @@ clusterDataPlotting <- function(peakMatrix, matrixL, img, groups, clusterData, s
   } else{
 
      int2plot <- unlist(int2plot)
-     matrix2plot <- rMSIproc::`[.rMSIprocPeakMatrix`(peakMatrix, int2plot)
+     matrix2plot <- peakM[int2plot]
      plot <- rMSIproc::plotClusterImageG(matrix2plot, allClusImages[int2plot])
       return(plot)
   }

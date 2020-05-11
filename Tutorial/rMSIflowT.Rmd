@@ -186,9 +186,10 @@ Principal component analysis (PCA) is a multidimensional reduction method. PCA c
 ```{r echo=FALSE, message=FALSE, warning=FALSE}
 centeringJ <- T      # The centering ensures the data is found within the 0/0 origin
 scalingJ  <- T       # The scaling equalizes the data variance to decrease the bias given the natural difference in units of the variables 
+data2pca <- peakM$intensity
 normalization <- peakM$normalizations$TIC  # Input here a vector with the normalization values. Input NA for no normalization.
 
-pcaD <-pcaJr(peakM, centeringJ, scalingJ, normalization)
+pcaD <-pcaJr(peakM, data2pca,centeringJ, scalingJ, normalization)
 
 ```
 
@@ -246,7 +247,7 @@ For now the only recommended method is the elbow method. The next chunk allow us
 ```{r}
 data2clus <- peakM$intensity     # The data used to make the plots. It must be a matrix NxM where N are the observations and M the variables
 norm <- peakM$normalizations$TIC # The normalization vector applied to the data
-testNumClus <- 100               # The number of clusters to test. (Usually no more than 10 clusters are needed)
+testNumClus <- 10               # The number of clusters to test. (Usually no more than 10 clusters are needed)
 merged <- F                      # If the images have to be clustered together or separately
 
 elbowPlot <- elbowMethod(peakM, data2clus, norm, testNumClus, merged)
@@ -275,7 +276,7 @@ kmeansData <- kmeansCluster(peakM, data2clus, norm4, numClusters, merged)
 
 This next chunk plots the cluster vector onto the images. This allows users to see which pixels correspond to each cluster.
 ```{r}
-img2plot <- c(1,4)    # Images you want to plot. 
+img2plot <- c(1,2)    # Images you want to plot. 
 savePlot <- F         # Save the plot into a pdf file (T/F)   
 fileName3 <- ".pdf"   # Name of the .pdf file
 
