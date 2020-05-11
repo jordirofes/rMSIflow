@@ -99,7 +99,7 @@ savePlot <- F                 # Choose if you want to save the plots into a pdf 
 fileN <- "plotsRAW.pdf"   # Choose the name of the pdf file. If a file has the same name it will be overwritten
 
 
-initialPlotter(peakM, matrixList, mz2plot,img2plot, normalization, savePlot, fileN)
+ggplotly(initialPlotter(peakM, matrixList, mz2plot,img2plot, normalization, savePlot, fileN))
 ```
 
 ### Average Spectrum from raw data
@@ -121,7 +121,7 @@ avSpecimg2plot <- c(1:5)      # Select the images you want to compare. Writing c
 
 library(ggplot2)
 library(plotly)
-avSpecRawplot(avSpec , avSpecimg2plot)
+ggplotly(avSpecRawplot(avSpec , avSpecimg2plot))
 
 ```
 
@@ -175,7 +175,7 @@ normalization <- peakM$normalizations$TIC    # Input here a vector with the norm
 savePlot <- F               # Choose if you want to save the plots into a pdf file (T/F)
 fileName1 <- ".pdf"         # Choose the name of the pdf file. If a file has the same name it will be overwritten
 
-avSpecPlot(peakM, pixels2compare, pixels2compare2, normalization, name1, name2, savePlot, fileName1)
+ggplotly(avSpecPlot(peakM, pixels2compare, pixels2compare2, normalization, name1, name2, savePlot, fileName1))
 
 
 ```
@@ -189,7 +189,7 @@ scalingJ  <- T       # The scaling equalizes the data variance to decrease the b
 data2pca <- peakM$intensity
 normalization <- peakM$normalizations$TIC  # Input here a vector with the normalization values. Input NA for no normalization.
 
-pcaD <-pcaJr(peakM, data2pca,centeringJ, scalingJ, normalization)
+pcaD <-pcaJr(peakM, data2pca, centeringJ, scalingJ, normalization)
 
 ```
 
@@ -295,7 +295,7 @@ img2plot <- c(1,4)               # Choose the images you want to plot
 clus2comp <- c(3,4)              # Choose the clusters you want to plot
 norm <- peakM$normalizations$TIC # Input here a vector with the normalization values. Input NA for no normalization.
 
-clusterKmeansComparison(peakM, norm, img2plot, groupsImg, clus2comp, kmeansData)
+ggplotly(clusterKmeansComparison(peakM, norm, img2plot, groupsImg, clus2comp, kmeansData))
 
 ```
 
@@ -322,7 +322,7 @@ sumDataComp <- compareClusAvSpec(c(refImg, refClus), c(compImg, compClus), peakM
 
 Sometimes you might not want to compare the clusters of one image. Other options might be interesting for analysis like comparing two full images. For this reason you can use this chunk to obtain the same results as the chunk before but with the chosen pixels of the spectra. Note that the functions input 
 
-```{r}
+```{r warning=FALSE}
 refpixels <- c(1:400)   # The pixels that contain the reference spectrum
 comppixels <- c(401:600)# The pixels that contain the spectrum to compare
 norm <- peakM$normalizations$TIC # Input here a vector with the normalization values. Input NA for no normalization.
@@ -332,11 +332,14 @@ data2comp <- avSpecComp(peakM$intensity[refpixels,], peakM$intensity[comppixels,
 
 ### Volcano Plot
 
-This next chunk creates a volcano plot with x = -log2(Fold Change) and y = -log10(p-values) and some lines marking the p-value = -log10(0.05) and the Fold Change = +-log2(2).
+This next chunk creates a volcano plot with x = log2(Fold Change) and y = -log10(p-values) and some lines marking the p-value = -log10(pvThreshold) and the Fold Change = +-log2(fdThreshold).
 ```{r}
 data2plot <- sumDataComp # The data frame obtained from the comparison of spectra
+fdThreshold <- 2         # The fold change threshold
+pvThreshold <- 0.05      # The p-value threshold
 
-plotVolcano <-volcanoPlotJ(data2plot)
+impMz <- impData(data2plot, pvThreshold, fdThreshold)
+plotVolcano <-volcanoPlotJ(data2plot, pvThreshold, fdThreshold)
 ggplotly(plotVolcano)
 
 ```

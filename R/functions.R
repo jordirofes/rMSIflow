@@ -147,11 +147,11 @@ pcChooseNum <- function(pcaJr, perc = 0.9, npc = 50){
     pcplotData <- pcplotData[1:npc,]
   }
 
-  plot <- ggplotly(ggplot(pcplotData) + geom_line(aes(x = PC, y = Cumulative)) +
+  plot <- ggplot(pcplotData) + geom_line(aes(x = PC, y = Cumulative)) +
                      geom_point(aes(x = PC, y = Cumulative)) + theme_minimal() +
                      ylab("Accumulative variance (%)") + xlab("Principal Component") +
                      geom_segment(aes(x = bound, y = 0, xend = bound, yend = cumulative[bound]), linetype = "dashed") +
-                     geom_segment(aes(x = 0, y = cumulative[bound], xend = bound, yend = cumulative[bound]), linetype = "dashed"))
+                     geom_segment(aes(x = 0, y = cumulative[bound], xend = bound, yend = cumulative[bound]), linetype = "dashed")
 
   # plot <- ggplotly(ggplot(pcplotData) + geom_line(aes(x = PC, y = Std)) + geom_point(aes(x = PC, y = Std)) + theme_minimal() +
   #                      ylab("Explained %") + xlab("Principal Component") + geom_segment(aes(x = bound, y = 0, xend = bound, yend = Std[bound] )))
@@ -200,10 +200,10 @@ parsed2 <- lapply(img2plot2, function(y){
 
 parsed2 <- do.call(rbind, parsed2)
 
-plots2 <- ggplotly(ggplot() + geom_line(aes(x = parsed$mz, y = parsed$int, colour = parsed$image)) +
+plots2 <- ggplot() + geom_line(aes(x = parsed$mz, y = parsed$int, colour = parsed$image)) +
                      theme_minimal() + xlab("m/z") + ylab("Intensity") +
                      theme(legend.title = element_blank()) +
-                     geom_segment(aes(x = parsed2$mz2 ,y = 0, xend = parsed2$mz2, yend = parsed2$i, colour = parsed2$gr)))
+                     geom_segment(aes(x = parsed2$mz2 ,y = 0, xend = parsed2$mz2, yend = parsed2$i, colour = parsed2$gr))
 
 return(plots2)
 }
@@ -233,8 +233,7 @@ avSpecPlot <- function(peakMat, pixels1, pixels2, normalization, name1, name2, s
                                 xlab("Mass") + ylab("Intensity") + theme_minimal() + theme(legend.title = element_blank())
 
   if(sav2 == T){ svPlot(filename2, aveSpec)}
-  aveSpecInteractive <- ggplotly(aveSpec)
-  return(aveSpecInteractive)
+  return(aveSpec)
 
 }
 
@@ -435,8 +434,8 @@ clusSpec <- unlist(clusSpec, recursive = F)
 clusSpec <- do.call(rbind, clusSpec)
 clusSpec <- clusSpec[which(!is.na(clusSpec$Spectra)),]
 
-plot1 <- ggplotly(ggplot(clusSpec) + geom_segment(aes(x = mz, xend = mz, y = 0, yend = Spectra, colour = paste(Image, "Cluster", Cluster))) +
-  theme_minimal() + theme(legend.title = element_blank()) + ylab("Intensity") + xlab("M/Z"))
+plot1 <- ggplot(clusSpec) + geom_segment(aes(x = mz, xend = mz, y = 0, yend = Spectra, colour = paste(Image, "Cluster", Cluster))) +
+  theme_minimal() + theme(legend.title = element_blank()) + ylab("Intensity") + xlab("M/Z")
 
 return(plot1)
 }
@@ -470,13 +469,20 @@ compareClusAvSpec <- function(refSpec, compSpec, peakMatrix, clusterData, norma)
 }
 
 #'@export
-volcanoPlotJ <- function(data2plot){
+volcanoPlotJ <- function(data2plot, pvt, fct){
 
   volcPlot <-ggplot(data2plot[[1]]) +
-    geom_point(aes(x = Log2FC, y = -log10(pvalues), color = mz)) +
-    geom_vline(aes(xintercept = log2(2)), linetype = "dashed") +
-    geom_hline(aes(yintercept = -log10(0.05)), linetype = "dashed") +
-    geom_vline(aes(xintercept = -log2(2)),linetype = "dashed") +
+    geom_point(aes(x = Log2FC, y = -log10(pvalues), color = data2plot[[1]]$pvalues < pvThreshold & data2plot[[1]]$Log2FC > log2(fdThreshold) | data2plot[[1]]$pvalues < pvThreshold & data2plot[[1]]$Log2FC < -log2(fdThreshold))) +
+    geom_vline(aes(xintercept = log2(fct)), linetype = "dashed") +
+    geom_hline(aes(yintercept = -log10(pvt)), linetype = "dashed") +
+    geom_vline(aes(xintercept = -log2(fct)),linetype = "dashed") +
     theme_minimal() + theme(legend.position = "none")
   return(volcPlot)
+}
+
+#'@export
+impData <- function(data2plot, pvf, fct){
+  dt <- data2plot[[1]]
+  dt2 <- data2plot[[1]][which((dt$pvalues < pvThreshold & dt$Log2FC > log2(fdThreshold)) | (dt$pvalues < pvThreshold & dt$Log2FC < -log2(fdThreshold))),]
+ return(dt2)
 }
