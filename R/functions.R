@@ -16,7 +16,7 @@ sepMatrix <- function(peakMatrix){
     limitUp <- sum(peakMatrix$numPixels[1:i])
     if(i == 1){limitDown <- 1}
     int <- limitDown:limitUp
-    matrixList[[i]] <- rMSIproc::`[.rMSIprocPeakMatrix`(peakMatrix, int)}
+    matrixList[[i]] <- peakM[peakM$names[i]]}
   }
   return(matrixList)
 }
@@ -61,12 +61,12 @@ svPlot <- function(flName, plots2save){
 
 ### This function makes a PCA from the peak matrix
 #'@export
-pcaJr <- function(peakMatrix, cnt = T, scl = T, norma = NA){
-  dataPca <- peakMatrix$intensity
+pcaJr <- function(peakMatrix, dataPca = peakM$intensity ,cnt = T, scl = T, norma = NA){
+
   if(!is.na(norma)){
     dataPca <- dataPca/norma
     }
-     colnames(dataPca) <- peakMatrix$mass
+     # colnames(dataPca) <- peakMatrix$mass
   pcaJr <- prcomp(dataPca, center = cnt, scale. = scl) ### Fem la PCA de la matriu de pics
   return(pcaJr)
 }
@@ -201,7 +201,7 @@ parsed2 <- lapply(img2plot2, function(y){
 parsed2 <- do.call(rbind, parsed2)
 
 plots2 <- ggplotly(ggplot() + geom_line(aes(x = parsed$mz, y = parsed$int, colour = parsed$image)) +
-                     theme_minimal() + xlab("Mass") + ylab("Intensity") +
+                     theme_minimal() + xlab("m/z") + ylab("Intensity") +
                      theme(legend.title = element_blank()) +
                      geom_segment(aes(x = parsed2$mz2 ,y = 0, xend = parsed2$mz2, yend = parsed2$i, colour = parsed2$gr)))
 
@@ -270,10 +270,9 @@ if(together == F){
   testClus <- rep(testClus, length(peakM$numPixels))
   }else{whitss <- whitss/sum(whitss)*100 }
 
-
   df <- data.frame("NC" = testClus, "TW" =  whitss, "Img" = as.factor(imgVec))
-  plotKmeans <- ggplot(df) + geom_point(aes(x = NC, y = TW, colour = Img)) + geom_line(aes(x = NC, y = TW, colour = Img)) +
-    ylab("Total Withinss (% from total)") + xlab("Number of Clusters") + theme_minimal()
+  plotKmeans <- ggplot(df) + geom_point(aes(x = NC, y = TW, colour = paste("Image", Img))) + geom_line(aes(x = NC, y = TW, colour = paste("Image",Img))) +
+    ylab("Total Withinss (% from total)" ) + xlab("Number of Clusters") + theme_minimal() + theme(legend.title = element_blank())
 
   return(plotKmeans)
 
