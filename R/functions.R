@@ -299,14 +299,14 @@ kmeansCluster <- function(peakMatrix, intensities, norma, numCl, together){
     int <-limitDown:limitUp
     if (i == 1){ limitDown <- 1}
     cl <- numCl[i]
-      clData[[i]] <- kmeans(clusData[limitDown:limitUp, ], cl)
+      clData[[i]] <- kmeans(clusData[limitDown:limitUp, ], cl, nstart = 100)
 
   }
   } else{
 
     if(length(numCl) > 1){stop("The number of clusters must be of length one when merged equals T")}
 
-    clData[[1]] <- kmeans(clusData, numCl)
+    clData[[1]] <- kmeans(clusData, numCl, nstart = 1000)
   }
   return(clData)
 
@@ -348,11 +348,14 @@ clusterDataPlotting <- function(peakMatrix, matrixL, img, groups, clusterData, s
 
 ######## Comparison of two average spectra
 #'@export
-avSpecComp <- function(refSpec, compSpec, peakMatrix, norma){
+avSpecComp <- function(refpixels, comppixels, peakMatrix, norma){
+  refSpec <- peakM$intensity[refpixels,]
+  compSpec <- peakM$intensity[comppixels,]
+
 
   if(!is.na(norma)){
-    refSpec <- refSpec/norma
-    compSpec <- compSpec/norma
+    refSpec <- refSpec/norma[refpixels]
+    compSpec <- compSpec/norma[comppixels]
   }
 
 
