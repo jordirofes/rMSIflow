@@ -337,9 +337,10 @@ This next chunk creates a volcano plot with x = log2(Fold Change) and y = -log10
 data2plot <- sumDataComp # The data frame obtained from the comparison of spectra
 fdThreshold <- 2         # The fold change threshold
 pvThreshold <- 0.05      # The p-value threshold
+mzThreshold <- 0         # The minimum m/z threshold
 
-impMz <- impData(data2plot, pvThreshold, fdThreshold)
-plotVolcano <-volcanoPlotJ(data2plot, pvThreshold, fdThreshold)
+impMz <- impData(data2plot, pvThreshold, fdThreshold, mzThreshold)
+plotVolcano <-volcanoPlotJ(data2plot, pvThreshold, fdThreshold, mzThreshold)
 ggplotly(plotVolcano)
 
 ```
