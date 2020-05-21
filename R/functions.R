@@ -469,10 +469,13 @@ compareClusAvSpec <- function(refSpec, compSpec, peakMatrix, clusterData, norma)
 }
 
 #'@export
-volcanoPlotJ <- function(data2plot, pvt, fct){
+volcanoPlotJ <- function(data2plot, pvt, fct, mztreshold){
 
-  volcPlot <-ggplot(data2plot[[1]]) +
-    geom_point(aes(x = Log2FC, y = -log10(pvalues), color = data2plot[[1]]$pvalues < pvThreshold & data2plot[[1]]$Log2FC > log2(fdThreshold) | data2plot[[1]]$pvalues < pvThreshold & data2plot[[1]]$Log2FC < -log2(fdThreshold))) +
+data2plot[[1]] <- data2plot[[1]][which(sumDataComp[[1]]$mz > mztreshold),]
+
+volcPlot <-ggplot(data2plot[[1]]) +
+    geom_point(aes(x = Log2FC, y = -log10(pvalues),
+                   color = data2plot[[1]]$pvalues < pvThreshold & data2plot[[1]]$Log2FC > log2(fdThreshold) | data2plot[[1]]$pvalues < pvThreshold & data2plot[[1]]$Log2FC < -log2(fdThreshold))) +
     geom_vline(aes(xintercept = log2(fct)), linetype = "dashed") +
     geom_hline(aes(yintercept = -log10(pvt)), linetype = "dashed") +
     geom_vline(aes(xintercept = -log2(fct)),linetype = "dashed") +
@@ -481,8 +484,9 @@ volcanoPlotJ <- function(data2plot, pvt, fct){
 }
 
 #'@export
-impData <- function(data2plot, pvf, fct){
+impData <- function(data2plot, pvf, fct, mzthreshold){
   dt <- data2plot[[1]]
   dt2 <- data2plot[[1]][which((dt$pvalues < pvThreshold & dt$Log2FC > log2(fdThreshold)) | (dt$pvalues < pvThreshold & dt$Log2FC < -log2(fdThreshold))),]
- return(dt2)
+  dt3 <- dt2[which(dt2$mz > mzthreshold),]
+  return(dt3)
 }
