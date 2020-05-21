@@ -352,12 +352,10 @@ avSpecComp <- function(refpixels, comppixels, peakMatrix, norma){
   refSpec <- peakM$intensity[refpixels,]
   compSpec <- peakM$intensity[comppixels,]
 
-
   if(!is.na(norma)){
     refSpec <- refSpec/norma[refpixels]
     compSpec <- compSpec/norma[comppixels]
   }
-
 
   ###################################################################### P-Values
 
@@ -463,11 +461,10 @@ compareClusAvSpec <- function(refSpec, compSpec, peakMatrix, clusterData, norma)
     limitUp <- sum(peakMatrix$numPixels[1:x])
     if(x == 1){limitDown <- 1}
     int <- limitDown:limitUp
-    Specs <- dt[which(clusterData[int] == y),]
+    Specs <- which(clusterData[int] == y)
 
   }, c(refSpec[1], compSpec[1]), c(refSpec[2], compSpec[2]), SIMPLIFY = F)
  compData <- avSpecComp(specs2comp[[1]], specs2comp[[2]], peakM, norma)
-
  return(compData)
 }
 
