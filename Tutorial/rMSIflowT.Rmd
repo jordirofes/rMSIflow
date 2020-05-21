@@ -327,7 +327,7 @@ refpixels <- c(1:400)   # The pixels that contain the reference spectrum
 comppixels <- c(401:600)# The pixels that contain the spectrum to compare
 norm <- peakM$normalizations$TIC # Input here a vector with the normalization values. Input NA for no normalization.
 
-data2comp <- avSpecComp(peakM$intensity[refpixels,], peakM$intensity[comppixels,], peakM, norm)
+data2comp <- avSpecComp(refpixels, comppixels, peakM, norm)
 ```
 
 ### Volcano Plot
