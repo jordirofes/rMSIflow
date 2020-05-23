@@ -62,10 +62,6 @@ This will create a rMSIproc object called peakM which will contain the peak matr
 # Here we extract the Peak Matrix from the .zip and create and object with all the data assigned to peakM
 peakM <- rMSIproc::LoadPeakMatrix(file.path(wDir, peakData))
 
-
-# If your peak matrix is composed of multiple images this will separate them in multiple peak matrix
-matrixList <- sepMatrix(peakM)
-
 peakM$names 
 ```
 
@@ -99,7 +95,7 @@ savePlot <- F                 # Choose if you want to save the plots into a pdf 
 fileN <- "plotsRAW.pdf"   # Choose the name of the pdf file. If a file has the same name it will be overwritten
 
 
-ggplotly(initialPlotter(peakM, matrixList, mz2plot,img2plot, normalization, savePlot, fileN))
+ggplotly(initialPlotter(peakM, mz2plot,img2plot, normalization, savePlot, fileN))
 ```
 
 ### Average Spectrum from raw data
@@ -187,7 +183,7 @@ Principal component analysis (PCA) is a multidimensional reduction method. PCA c
 centeringJ <- T      # The centering ensures the data is found within the 0/0 origin
 scalingJ  <- T       # The scaling equalizes the data variance to decrease the bias given the natural difference in units of the variables 
 data2pca <- peakM$intensity
-normalization <- peakM$normalizations$TIC  # Input here a vector with the normalization values. Input NA for no normalization.
+normalization <- NA  # Input here a vector with the normalization values. Input NA for no normalization.
 
 pcaD <-pcaJr(peakM, data2pca, centeringJ, scalingJ, normalization)
 
@@ -224,11 +220,11 @@ plotly::ggplotly(plotPca)
 This chunk plots a chosen principal component onto the images.  
 ```{r message=FALSE, warning=FALSE}
 pc2plot <- 1             # Select which PC to plot into the images
-img2plotPca <- c(1,3)    # Select which images to plot. Using c() allows you to plot more images at the same time. 
+img2plotPca <- c(1)    # Select which images to plot. Using c() allows you to plot more images at the same time. 
 savePlot <- F            # Save the plot into a pdf file (T/F)
 fileNpca3 <- "PCimg.pdf" # Name of the .pdf file
 
-pcaPlotImg(peakM, matrixList, pcaD, img2plotPca, groupsImg, pc2plot, savePlot, fileNpca3) 
+pcaPlotImg(peakM, pcaD, img2plotPca, groupsImg, pc2plot, savePlot, fileNpca3) 
   
 ```
 

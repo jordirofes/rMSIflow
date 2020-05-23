@@ -23,31 +23,55 @@ sepMatrix <- function(peakMatrix){
 
 ### This function plots the intensities of a given mass on the images
 #'@export
-initialPlotter <- function(peakMatrix, matrixL, mz, img, norma, sv, file){
-  a <- vector("list", length(img))
+initialPlotter <- function(peakMatrix, mz, img, norma, sv, file){
   # if(is.na(groups)){
   #   groups <-  peakMatrix$names
   #   }
+  a <- vector("list", length(img))
+  if(!any(is.na(norma))){
+      dt <- peakM$intensity/norma
+    }else{
+      dt <- peakM$intensity
+    }
+
+
   if (img == 0){
       a <- rMSIproc::plotPeakImageG(peakMatrix, mz, normalization = norma)
       if(sv == T){svPlot(file, a)}
       return(a)
   } else{
-    for (j in (1:length(img))){
 
-      if(!is.na(norma)){
-      limitDown <- sum(peakMatrix$numPixels[1:(img[j]-1)])+1
-      limitUp <- sum(peakMatrix$numPixels[1:img[j]])
-      if(img[j] == 1){limitDown <- 1}
-      int <- limitDown:limitUp} else{int = 1}
-      a[[j]] <- rMSIproc::plotPeakImageG(matrixL[[img[j]]], mz, normalization = norma[int])
-    }
+    mass <- which.min(abs(peakM$mass - mz))
+
+    int <- lapply(img, function(j){
+      limitDown <- sum(peakMatrix$numPixels[1:(j-1)])+1
+      limitUp <- sum(peakMatrix$numPixels[1:j])
+      if(j == 1){limitDown <- 1}
+      return(limitDown:limitUp)
+    })
+    int <- unlist(int)
+
+    dMin <- dt[int[which.min(dt[int,mass])],mass]
+    dMax <- dt[int[which.max(dt[int,mass])],mass]
+
+
+      for (j in (1:length(img))){
+
+        limitDown <- sum(peakMatrix$numPixels[1:(img[j]-1)])+1
+        limitUp <- sum(peakMatrix$numPixels[1:img[j]])
+        if(img[j] == 1){limitDown <- 1}
+        int <- limitDown:limitUp
+        a[[j]] <- rMSIproc::plotValuesImageG(peakMatrix[int], pixel_values = dt[int,mass],scale_label = paste(round(peakMatrix$mass[mass],digits = 4), "m/z"), gradient_scale_limits = c(dMin, dMax))
+      }
+
   }
   pl <- lapply(1:length(img), function(i){
     plotly::ggplotly(p = a[[i]])
   })
-  if(sv == T){svPlot(file, a)}
-  return(subplot(pl))
+
+  if(sv == T){svPlot(fileN, a)}
+  return(plotly::subplot(pl))
+
 }
 
 ### This function saves given plot on a pdf file
@@ -105,7 +129,7 @@ pca2dimPlot <- function(peakMatrix, pcaJr, grpImg, pc1, pc2, sv2, fileN2) {
 
 ### This function plots a chosen principal component into selected images
 #'@export
-pcaPlotImg <- function(peakMatrix, matrixLst, pcaJr, img ,grpImg, pc, sv, fileN){
+pcaPlotImg <- function(peakMatrix, pcaJr, img ,grpImg, pc, sv, fileN){
   a <- vector("list", length(img))
   if(is.na(grpImg)){ grpImg <- peakMatrix$names}
 
@@ -114,18 +138,30 @@ pcaPlotImg <- function(peakMatrix, matrixLst, pcaJr, img ,grpImg, pc, sv, fileN)
       if(sv == T){svPlot(fileN, a)}
     return(a)
   } else{
+
+    int <- lapply(img, function(j){
+      limitDown <- sum(peakMatrix$numPixels[1:(j-1)])+1
+      limitUp <- sum(peakMatrix$numPixels[1:j])
+      if(j == 1){limitDown <- 1}
+      return(limitDown:limitUp)
+    })
+    int <- unlist(int)
+    dMin <- pcaJr$x[int[which.min(pcaJr$x[int,pc])],pc]
+    dMax <- pcaJr$x[int[which.max(pcaJr$x[int,pc])],pc]
+
     for (j in (1:length(img))){
 
       limitDown <- sum(peakMatrix$numPixels[1:(img[j]-1)])+1
       limitUp <- sum(peakMatrix$numPixels[1:img[j]])
       if(img[j] == 1){limitDown <- 1}
       int <- limitDown:limitUp
-      a[[j]] <- rMSIproc::plotValuesImageG(matrixLst[[img[j]]], pixel_values = pcaJr$x[int,pc] , plot_labels = grpImg[img[j]])
+      a[[j]] <- rMSIproc::plotValuesImageG(peakM[int], pixel_values = pcaJr$x[int,pc] , plot_labels = grpImg[img[j]], gradient_scale_limits = c(dMin,dMax))
     }
   }
   pl <- lapply(1:length(img), function(i){
     plotly::ggplotly(p = a[[i]])
   })
+
     if(sv == T){svPlot(fileN, a)}
   return(plotly::subplot(pl))
 
@@ -485,8 +521,7 @@ volcPlot <-ggplot(data2plot[[1]]) +
 
 #'@export
 impData <- function(data2plot, pvf, fct, mzthreshold){
-  dt <- data2plot[[1]]
-  dt2 <- data2plot[[1]][which((dt$pvalues < pvThreshold & dt$Log2FC > log2(fdThreshold)) | (dt$pvalues < pvThreshold & dt$Log2FC < -log2(fdThreshold))),]
+  dt2 <- data2plot[[1]][which(data2plot[[1]]$pvalues < pvThreshold & data2plot[[1]]$Log2FC > log2(fdThreshold) | data2plot[[1]]$pvalues < pvThreshold & data2plot[[1]]$Log2FC < -log2(fdThreshold)),]
   dt3 <- dt2[which(dt2$mz > mzthreshold),]
   return(dt3)
 }
