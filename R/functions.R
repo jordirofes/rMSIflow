@@ -389,6 +389,7 @@ avSpecComp <- function(refpixels, comppixels, peakMatrix, norma){
   compSpec <- peakM$intensity[comppixels,]
 
   if(!is.na(norma)){
+
     refSpec <- refSpec/norma[refpixels]
     compSpec <- compSpec/norma[comppixels]
   }
@@ -463,7 +464,7 @@ clusSpec <- lapply(img, function(x){          # We calculate the average spectra
     if(x == 1){limitDown <- 1}
     int <- limitDown:limitUp
   lapply(cluster,function(y){
-    data.frame(Spectra = avSpecP(peakM, which(clusterData[int] == y), norma), mz = peakM$mass, Image = groups[x], Cluster = y)
+    data.frame(Spectra = avSpecP(peakM, int[clusterData[int] == y], norma), mz = peakM$mass, Image = groups[x], Cluster = y)
     })
   })
 
@@ -497,7 +498,8 @@ compareClusAvSpec <- function(refSpec, compSpec, peakMatrix, clusterData, norma)
     limitUp <- sum(peakMatrix$numPixels[1:x])
     if(x == 1){limitDown <- 1}
     int <- limitDown:limitUp
-    Specs <- which(clusterData[int] == y)
+    Specs <- int[clusterData[int] == y]
+    return(Specs)
 
   }, c(refSpec[1], compSpec[1]), c(refSpec[2], compSpec[2]), SIMPLIFY = F)
  compData <- avSpecComp(specs2comp[[1]], specs2comp[[2]], peakM, norma)
